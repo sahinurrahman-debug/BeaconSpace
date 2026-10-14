@@ -6,8 +6,8 @@ from pathlib import Path
 
 import numpy as np
 
-STATUS_COLOR = {"cut_off": "#d7191c", "longer_route": "#fdae61", "connected": "#1a9641",
-                "not_assessable": "#999999", "no_road_data": "#7b3294"}
+STATUS_COLOR = {"cut_off": "#FF4D5E", "longer_route": "#FBBF24", "connected": "#34D399",
+                "not_assessable": "#8FA0BD", "no_road_data": "#A78BFA"}
 STATUS_LABEL = {"cut_off": "Cut off", "longer_route": "Longer route", "connected": "Connected",
                 "not_assessable": "Not assessable", "no_road_data": "No road data"}
 
@@ -121,9 +121,9 @@ def interactive_map(out: Path, summary: dict, ctx: dict, path: Path):
     m = folium.Map(location=[(b0 + b1) / 2, (l0 + l1) / 2], zoom_start=11, tiles=None, control_scale=True)
     _esri = "https://server.arcgisonline.com/ArcGIS/rest/services/{}/MapServer/tile/{{z}}/{{y}}/{{x}}"
     _attr = "Tiles &copy; Esri &mdash; display only"
-    folium.TileLayer(_esri.format("Canvas/World_Light_Gray_Base"), attr=_attr, name="Basemap: light (display only)",
-                     max_native_zoom=16, max_zoom=18).add_to(m)
     folium.TileLayer(_esri.format("Canvas/World_Dark_Gray_Base"), attr=_attr, name="Basemap: dark (display only)",
+                     max_native_zoom=16, max_zoom=18).add_to(m)
+    folium.TileLayer(_esri.format("Canvas/World_Light_Gray_Base"), attr=_attr, name="Basemap: light (display only)",
                      show=False, max_native_zoom=16, max_zoom=18).add_to(m)
     folium.TileLayer("Esri.WorldTopoMap", name="Basemap: topographic (display only)", show=False).add_to(m)
     folium.TileLayer("Esri.WorldImagery", name="Basemap: imagery (display only)", show=False).add_to(m)
@@ -133,16 +133,16 @@ def interactive_map(out: Path, summary: dict, ctx: dict, path: Path):
         return json.loads(f.read_text(encoding="utf-8")) if f.exists() else {"type": "FeatureCollection", "features": []}
 
     imp = load("impact_polygons.geojson")
-    for cid, label, col in ((1, "Flood water", "#0047ff"), (2, "Debris / scour", "#ff8c00")):
+    for cid, label, col in ((1, "Flood water", "#3B82F6"), (2, "Debris / scour", "#ff8c00")):
         feats = [f for f in imp["features"] if int(f["properties"].get("cls", 0)) == cid]
         if feats:
             folium.GeoJson({"type": "FeatureCollection", "features": feats}, name=label,
                            style_function=lambda _, c=col: {"color": c, "fillColor": c, "weight": 0.6, "fillOpacity": 0.65}).add_to(m)
-    for fname, label, kw in (("roads_hit.geojson", "Roads hit", {"color": "#ff2d55", "weight": 3}),
-                             ("blocked_segments.geojson", "Blocked road segments", {"color": "#ff0000", "weight": 5}),
-                             ("flowpath.geojson", "Traced flood path", {"color": "#7b2cbf", "weight": 4}),
+    for fname, label, kw in (("roads_hit.geojson", "Roads hit", {"color": "#FF4D5E", "weight": 3}),
+                             ("blocked_segments.geojson", "Blocked road segments", {"color": "#FF4D5E", "weight": 5}),
+                             ("flowpath.geojson", "Traced flood path", {"color": "#A78BFA", "weight": 4}),
                              ("flowpath_corridor.geojson", "Susceptible corridor (height above path)",
-                              {"color": "#c77dff", "fillColor": "#c77dff", "weight": 0.5, "fillOpacity": 0.25})):
+                              {"color": "#A78BFA", "fillColor": "#A78BFA", "weight": 0.5, "fillOpacity": 0.2})):
         d = load(fname)
         if d["features"]:
             folium.GeoJson(d, name=label, show=fname != "flowpath_corridor.geojson",
@@ -150,8 +150,8 @@ def interactive_map(out: Path, summary: dict, ctx: dict, path: Path):
     bd = load("buildings_affected.geojson")
     if bd["features"]:
         folium.GeoJson(bd, name="Buildings affected / exposed", show=True,
-                       style_function=lambda f: {"color": {"destroyed_likely": "#7a0177", "affected": "#e7298a",
-                                                           "exposed": "#fcc5c0"}.get(f["properties"].get("status"), "#999"),
+                       style_function=lambda f: {"color": {"destroyed_likely": "#C026D3", "affected": "#E879F9",
+                                                           "exposed": "#F5D0FE"}.get(f["properties"].get("status"), "#999"),
                                                  "weight": 1, "fillOpacity": 0.8},
                        tooltip=folium.GeoJsonTooltip(fields=["status"])).add_to(m)
     br = load("bridges_hit.geojson")
@@ -180,13 +180,92 @@ def interactive_map(out: Path, summary: dict, ctx: dict, path: Path):
                        marker=folium.Marker(icon=folium.Icon(color="green", icon="plus")),
                        tooltip=folium.GeoJsonTooltip(fields=["name"])).add_to(m)
     folium.LayerControl(collapsed=True).add_to(m)
-    title = (f"<style>.bs-title{{position:fixed;top:12px;left:56px;z-index:9999;background:#fff;color:#0f172a;padding:10px 14px;"
-             f"border-radius:12px;font:16px/1.4 Inter,system-ui,sans-serif;box-shadow:0 2px 12px #0003;max-width:min(520px,70vw)}}"
-             f".bs-title small{{display:block;font-size:13px;opacity:.75;margin-top:2px}}</style>"
-             f"<div class='bs-title'><b>BeaconSpace · flood impact – {summary['name']}</b><br>"
-             f"Impacted: {summary['area_ha']['impact_total_ha']} ha &middot; cut-off settlements: {summary['access'].get('cut_off', 0)}"
-             f"<small>Contains modified Copernicus Sentinel data {summary['event_utc'][:4]} &middot; "
-             f"© OpenStreetMap contributors &middot; Copernicus DEM © DLR/Airbus. Educational prototype.</small></div>")
-    m.get_root().html.add_child(folium.Element(title))
+    m.get_root().header.add_child(folium.Element(_PANEL_CSS))
+    A, D, AC = summary["area_ha"], summary["damage"], summary["access"]
+    nm = summary["name"].replace("_", " ")
+    ev_date = summary["event_utc"][:10]
+    hdr = (f"<div class='bs-glass bs-hdr'><div class='bs-k'>BEACONSPACE · FLOOD IMPACT</div><div class='bs-t'>{nm}</div>"
+           f"<div class='bs-stats'><div><b>{A['impact_total_ha']:,.0f}</b><span>ha flooded / debris</span></div>"
+           f"<div><b>{D['buildings']['affected_total']:,}</b><span>buildings affected</span></div>"
+           f"<div><b>{D['roads_total_hit_km']:,.0f}</b><span>km road hit</span></div>"
+           f"<div class='crit'><b>{AC.get('cut_off', 0)}</b><span>cut off</span></div></div>"
+           f"<div class='bs-m'>FLOOD {ev_date} · Contains modified Copernicus Sentinel data {summary['event_utc'][:4]} · © OpenStreetMap contributors · "
+           f"Copernicus DEM © DLR/Airbus · educational prototype</div></div>")
+    legend = ("<div class='bs-glass bs-leg'>" + "".join(f"<div><i style='background:{c}'></i>{t}</div>" for c, t in (
+        ("#3B82F6", "Flood water"), ("#FF8C00", "Debris / scour"), ("#FF4D5E", "Road hit"), ("#E879F9", "Building affected"),
+        (STATUS_COLOR["cut_off"], "Critical: cut off"), (STATUS_COLOR["longer_route"], "Watch: longer route"),
+        (STATUS_COLOR["connected"], "Normal: connected"))) + "</div>")
+    m.get_root().html.add_child(folium.Element(hdr + legend))
+    wr_meta = out / "waterrise.json"
+    if wr_meta.exists() and (out / "waterrise.png").exists():
+        import base64
+        meta = json.loads(wr_meta.read_text(encoding="utf-8"))
+        png = base64.b64encode((out / "waterrise.png").read_bytes()).decode()
+        panel = ("<div class='bs-glass bs-wr'><div class='bs-k'>WATER-RISE PREVIEW</div>"
+                 "<label for='bs-h'>+<b id='bs-hv'>5</b> m above the nearest river</label>"
+                 f"<input id='bs-h' type='range' min='0' max='{meta['max_h']}' value='5' step='1' aria-label='Water level above nearest river in metres'>"
+                 "<div class='bs-row'><div><b id='bs-a'>–</b><span>ha</span></div><div><b id='bs-b'>–</b><span>buildings</span></div>"
+                 "<div><b id='bs-s'>–</b><span>settlements</span></div></div>"
+                 "<div class='bs-n'>Indicative, terrain-only (height above nearest drainage). Not a flood forecast.</div></div>")
+        js = ("<script>(function(){var D=" + json.dumps({k: meta[k] for k in ('bounds', 'area_ha', 'buildings', 'settlements', 'n_buildings', 'n_settlements')})
+              + ";var SRC='data:image/png;base64," + png + "';var NAME='" + m.get_name() + "';"
+              + _WR_JS + "})();</script>")
+        m.get_root().html.add_child(folium.Element(panel + js))
     m.fit_bounds([[b0, l0], [b1, l1]])
     m.save(path)
+
+
+_PANEL_CSS = """<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+:root{--g-bg:rgba(15,21,33,.66);--g-fg:#E6EAF2;--g-mut:#8FA0BD;--g-line:rgba(255,255,255,.10);--g-acc:#22D3EE;--g-crit:#FF4D5E}
+.bs-light{--g-bg:rgba(255,255,255,.74);--g-fg:#0B1220;--g-mut:#526079;--g-line:rgba(15,23,42,.14);--g-acc:#0E7490;--g-crit:#C81E2E}
+.bs-glass{position:fixed;z-index:9999;background:var(--g-bg);color:var(--g-fg);border:1px solid var(--g-line);border-radius:14px;
+backdrop-filter:blur(14px) saturate(1.25);-webkit-backdrop-filter:blur(14px) saturate(1.25);box-shadow:0 8px 28px rgba(0,0,0,.35);
+font:14px/1.4 Inter,system-ui,sans-serif;padding:14px 16px}
+.bs-k{font:600 11px/1.2 'JetBrains Mono',ui-monospace,Consolas,monospace;letter-spacing:.12em;color:var(--g-acc);margin-bottom:6px}
+.bs-t{font-weight:700;font-size:16px;margin-bottom:10px}
+.bs-hdr{top:12px;left:56px;max-width:min(560px,calc(100vw - 150px))}
+.bs-stats{display:grid;grid-template-columns:repeat(4,auto);gap:4px 20px}
+.bs-stats b{display:block;font:600 22px/1.1 'JetBrains Mono',ui-monospace,Consolas,monospace}
+.bs-stats span,.bs-row span{display:block;font-size:12px;color:var(--g-mut)}.bs-stats .crit b{color:var(--g-crit)}
+.bs-m{margin-top:10px;font:400 10.5px/1.45 'JetBrains Mono',ui-monospace,Consolas,monospace;color:var(--g-mut)}
+.bs-leg{right:12px;bottom:28px;font-size:13px;padding:10px 14px;display:grid;gap:4px}
+.bs-leg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+.bs-wr{left:12px;bottom:28px;width:min(340px,calc(100vw - 24px))}
+.bs-wr label{display:block;font-size:15px;margin:2px 0 8px}.bs-wr label b{font:600 18px 'JetBrains Mono',ui-monospace,monospace;color:var(--g-acc)}
+.bs-wr input[type=range]{width:100%;accent-color:var(--g-acc);height:28px;cursor:pointer}
+.bs-row{display:flex;gap:18px;margin-top:6px}.bs-row b{font:600 18px 'JetBrains Mono',ui-monospace,monospace}
+.bs-n{margin-top:8px;font-size:12px;color:var(--g-mut)}
+.leaflet-control-layers,.leaflet-bar a,.leaflet-control-attribution,.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--g-bg)!important;color:var(--g-fg)!important;
+backdrop-filter:blur(10px);border:1px solid var(--g-line)}
+.leaflet-container a{color:var(--g-acc)}.leaflet-control-layers-expanded{padding:10px 14px}
+@media (max-width:700px){.bs-hdr{left:56px;right:12px}.bs-stats{grid-template-columns:repeat(2,auto)}.bs-leg{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>"""
+
+_WR_JS = r"""
+function init(){
+  var map=window[NAME]; if(!map||!window.L){return setTimeout(init,150)}
+  var img=new Image();
+  img.onload=function(){
+    var W=img.width,H=img.height,sc=document.createElement('canvas');sc.width=W;sc.height=H;
+    var sx=sc.getContext('2d');sx.drawImage(img,0,0);var sd=sx.getImageData(0,0,W,H).data;
+    var cv=document.createElement('canvas');cv.width=W;cv.height=H;var cx=cv.getContext('2d'),out=cx.createImageData(W,H),o=out.data;
+    map.createPane('waterrise');map.getPane('waterrise').style.zIndex=350;map.getPane('waterrise').style.pointerEvents='none';
+    var im=new Image();var ov=L.imageOverlay(im,D.bounds,{pane:'waterrise',opacity:.7,interactive:false}).addTo(map);var last=null;
+    function show(){cv.toBlob(function(b){var u=URL.createObjectURL(b);im.src=u;if(last){URL.revokeObjectURL(last)}last=u})}
+    var el=function(i){return document.getElementById(i)};
+    function paint(h){
+      for(var i=0,j=0;i<sd.length;i+=4,j+=4){var v=sd[i];
+        if(v<=h){o[j]=34;o[j+1]=211;o[j+2]=238;o[j+3]=v>=h-1?255:205}else{o[j+3]=0}}
+      cx.putImageData(out,0,0);show();
+      el('bs-hv').textContent=h;el('bs-a').textContent=Math.round(D.area_ha[h]).toLocaleString();
+      el('bs-b').textContent=D.buildings[h].toLocaleString();el('bs-s').textContent=D.settlements[h].toLocaleString();
+    }
+    var sl=el('bs-h'),t=null;paint(+sl.value);
+    sl.addEventListener('input',function(){clearTimeout(t);var v=+sl.value;t=setTimeout(function(){paint(v)},40)});
+  };
+  img.src=SRC;
+}
+window.addEventListener('load',init);
+"""

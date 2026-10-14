@@ -1,5 +1,5 @@
 {
-  "created": "2026-10-14T14:10:12.780434+00:00",
+  "created": "2026-10-14T16:55:31.563093+00:00",
   "bbox": [
     84.93,
     27.78,
@@ -71,7 +71,10 @@
     "input": "7 channels: post VV, post VH, pre VV, pre VH (dB, scaled), smoothed change VV/VH, slope; see floodsys/flood/model.py",
     "training_data": "Kuro Siwo GRD (Bountos et al., NeurIPS 2024, CC BY)",
     "trained_on": "11700 patches from 5 train shards; epochs=14",
-    "held_out_metrics": {
+    "false_alarm_rate_flood_free": 0.026441173112254593,
+    "created": "2026-10-14",
+    "limitations": "Trained mostly on low-relief floods; debris flows are not a label class; unseen terrain may degrade.",
+    "metrics_all_test_shard_patches_NOT_event_held_out": {
       "10m": {
         "iou": 0.7213031744506087,
         "f1": 0.8380896348266229,
@@ -85,9 +88,31 @@
         "recall": 0.925707660872432
       }
     },
-    "false_alarm_rate_flood_free": 0.026441173112254593,
-    "created": "2026-10-14",
-    "limitations": "Trained mostly on low-relief floods; debris flows are not a label class; unseen terrain may degrade."
+    "unseen_events": [
+      "118",
+      "130",
+      "147",
+      "277",
+      "279",
+      "427"
+    ],
+    "unseen_event_flood_iou_10m": {
+      "118": 0.151,
+      "130": 0.922,
+      "147": 0.245,
+      "277": 0.745,
+      "279": 0.471,
+      "427": 0.269
+    },
+    "unseen_event_flood_iou_20m": {
+      "118": 0.181,
+      "130": 0.928,
+      "147": 0.274,
+      "277": 0.742,
+      "279": 0.412,
+      "427": 0.28
+    },
+    "caveat": "19 of 25 test-shard events also occur in the training patches; only the unseen_events results are event-held-out."
   },
   "sentinel1_pairs": [
     {

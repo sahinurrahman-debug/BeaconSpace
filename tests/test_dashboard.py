@@ -38,8 +38,8 @@ def test_finished_run_shows_cards_and_tabs(tmp_path):
     at = _app(tmp_path).run()
     assert not at.exception
     t = _text(at)
-    assert "Flooded or debris-covered" in t and "Buildings affected" in t and "Cut off" in t
-    assert len(at.tabs) == 5
+    assert "Flooded / debris" in t and "Buildings affected" in t and "Cut off" in t and "Access status" in t
+    assert len(at.tabs) == 4
 
 
 def test_run_hands_over_to_results(tmp_path, monkeypatch):
@@ -60,7 +60,7 @@ def test_run_hands_over_to_results(tmp_path, monkeypatch):
     assert not at.exception, at.exception
     assert at.session_state["mode"] == "Finished runs"
     assert at.session_state["sel_run"] == "fresh_run"
-    assert "Flooded or debris-covered" in _text(at)
+    assert "Flooded / debris" in _text(at)
 
 
 def test_failure_shows_friendly_message(tmp_path, monkeypatch):

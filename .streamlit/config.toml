@@ -1,5 +1,6 @@
-# BeaconSpace design system: one accent (beacon amber), neutral surfaces, two fonts (Inter + Space Grotesk, loaded in app/dashboard.py).
-# Light and dark themes are both defined; the app follows the system setting (change it under  ⋮ ▸ Settings ▸ Theme).
+# BeaconSpace "mission control" design system: obsidian dark-first base, frosted-glass modules (CSS), ONE accent (electric cyan),
+# traffic-light status scale, Inter + JetBrains Mono (loaded in app/dashboard.py). Light and dark both defined; follows the system setting
+# (change under  ⋮ ▸ Settings ▸ Theme).
 [server]
 headless = true
 
@@ -15,17 +16,17 @@ headingFont = "sans-serif"
 showWidgetBorder = true
 
 [theme.light]
-primaryColor = "#B45309"
-backgroundColor = "#F5F6FA"
+primaryColor = "#0E7490"
+backgroundColor = "#F4F6FA"
 secondaryBackgroundColor = "#FFFFFF"
-textColor = "#0F172A"
-borderColor = "#D9DEE8"
-linkColor = "#9A4507"
+textColor = "#0B1220"
+borderColor = "#D3DAE6"
+linkColor = "#0E7490"
 
 [theme.dark]
-primaryColor = "#F5A524"
-backgroundColor = "#0B1220"
-secondaryBackgroundColor = "#131C2E"
-textColor = "#E8ECF4"
-borderColor = "#26324A"
-linkColor = "#FFC15E"
+primaryColor = "#22D3EE"
+backgroundColor = "#0B0E14"
+secondaryBackgroundColor = "#111723"
+textColor = "#E6EAF2"
+borderColor = "#222C3F"
+linkColor = "#67E8F9"

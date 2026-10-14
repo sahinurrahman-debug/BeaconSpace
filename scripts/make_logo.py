@@ -27,18 +27,18 @@ def svg(accent, sat_color, size=96):
 
 if __name__ == "__main__":
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "beaconspace.svg").write_text(svg("#B45309", "#0F172A"), encoding="utf-8")
-    (OUT / "beaconspace-dark.svg").write_text(svg("#F5A524", "#E8ECF4"), encoding="utf-8")
+    (OUT / "beaconspace.svg").write_text(svg("#0E7490", "#0F172A"), encoding="utf-8")
+    (OUT / "beaconspace-dark.svg").write_text(svg("#22D3EE", "#E8ECF4"), encoding="utf-8")
     S, N = 512, 64
     k = S / 48
     img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     for r, o in zip(RADII, OPAC):
-        d.arc([(CX - r) * k, (CY - r) * k, (CX + r) * k, (CY + r) * k], 270, 360, fill=(245, 165, 36, int(255 * o)), width=int(3.2 * k))
+        d.arc([(CX - r) * k, (CY - r) * k, (CX + r) * k, (CY + r) * k], 270, 360, fill=(34, 211, 238, int(255 * o)), width=int(3.2 * k))
         for ang in (270, 360):                                   # round caps
             x, y = CX + r * math.cos(math.radians(ang)), CY + r * math.sin(math.radians(ang))
-            d.ellipse([(x - 1.6) * k, (y - 1.6) * k, (x + 1.6) * k, (y + 1.6) * k], fill=(245, 165, 36, int(255 * o)))
-    d.ellipse([(CX - 5.6) * k, (CY - 5.6) * k, (CX + 5.6) * k, (CY + 5.6) * k], fill=(245, 165, 36, 255))
+            d.ellipse([(x - 1.6) * k, (y - 1.6) * k, (x + 1.6) * k, (y + 1.6) * k], fill=(34, 211, 238, int(255 * o)))
+    d.ellipse([(CX - 5.6) * k, (CY - 5.6) * k, (CX + 5.6) * k, (CY + 5.6) * k], fill=(34, 211, 238, 255))
     d.ellipse([(SAT[0] - 3.3) * k, (SAT[1] - 3.3) * k, (SAT[0] + 3.3) * k, (SAT[1] + 3.3) * k], fill=(232, 236, 244, 255))
     img.resize((N, N), Image.LANCZOS).save(OUT / "favicon.png")
     print("wrote", sorted(p.name for p in OUT.iterdir()))

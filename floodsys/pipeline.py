@@ -14,7 +14,7 @@ import numpy as np
 import rasterio
 
 from . import config
-from .analysis import access, damage, flowpath
+from .analysis import access, damage, flowpath, waterrise
 from .data import dem as demmod
 from .data import osm as osmmod
 from .data import s1 as s1mod
@@ -182,6 +182,16 @@ def run(cfg: RunConfig, log=print) -> dict:
     _gdf_out(acc["blocked"], out / "blocked_segments.geojson")
     _gdf_out(acc["destinations"], out / "destinations.geojson")
     log(f"[run] access: {acc['summary']}")
+
+    # ---- water-rise preview (HAND-based "what if the water rose h metres")
+    try:
+        cen = bstat.geometry.centroid
+        bxy = np.column_stack([cen.x.values, cen.y.values]) if len(bstat) else None
+        sl = acc["settlements"]
+        sll = np.column_stack([sl["lon"].values, sl["lat"].values]) if len(sl) else None
+        waterrise.build(out, grid, hand, bxy, sll, log=log)
+    except Exception as exc:
+        log(f"[waterrise] skipped ({exc})")
 
     # ---- bonus: flow path ---------------------------------------------------------------
     fp = None
