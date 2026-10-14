@@ -58,7 +58,7 @@ pytest -q            # offline unit tests on synthetic data (pairing, detection,
 ```
 
 ### Add the trained AI model (optional but scored)
-Without `models/flood_unet.onnx` the system runs its physics-based detector. To train the U-Net on Kuro Siwo with a free Colab T4 GPU follow
+`models/flood_unet.onnx` (≈ 98 MB) is **not in the repository** — see [`models/README.md`](models/README.md) for where to download it. Without it the system runs its physics-based detector. To train the U-Net on Kuro Siwo with a free Colab T4 GPU follow
 [`docs/COLAB_GUIDE.md`](docs/COLAB_GUIDE.md), then copy `flood_unet.onnx` and `flood_unet.json` into `models/`. The system picks them up automatically
 and records them in `provenance.json`.
 

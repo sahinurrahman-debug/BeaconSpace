@@ -7,3 +7,4 @@ data/reference/
 _synth_work/
 models/*.pt
 .ipynb_checkpoints/
+models/*.onnx
