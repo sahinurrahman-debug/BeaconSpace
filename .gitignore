@@ -1,0 +1,9 @@
+cache/
+outputs/
+__pycache__/
+*.pyc
+.venv/
+data/reference/
+_synth_work/
+models/*.pt
+.ipynb_checkpoints/
