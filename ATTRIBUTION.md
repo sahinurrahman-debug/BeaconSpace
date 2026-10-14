@@ -12,4 +12,4 @@
 
 **Sentinel-1 RTC** is distributed by Microsoft Planetary Computer, derived from Copernicus Sentinel-1 GRD. **Sentinel-2 L2A** COGs via AWS Earth Search / Copernicus. Software dependencies keep their own licences.
 
-> Educational prototype – not an operational tool. No images of victims are used anywhere in this project.
+> No images of victims are used anywhere in this project.

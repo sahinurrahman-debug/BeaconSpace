@@ -75,7 +75,7 @@ html,body,.stApp,.stApp button,.stApp input,.stApp textarea,.stApp [data-baseweb
 .stApp,.stApp p,.stApp li,.stApp label,.stApp [data-testid="stWidgetLabel"] p{font-size:16px}
 h1,h2,h3,.bs-head{font-family:var(--bs-font)!important;letter-spacing:-.015em;font-weight:700}
 .bs-mono{font-family:var(--bs-mono)!important}
-.block-container{padding:8px 32px 72px;max-width:1600px;margin:0 auto}
+.block-container{padding:96px 32px 72px;max-width:1600px;margin:0 auto}
 [data-testid="stSidebar"],[data-testid="stSidebarCollapsedControl"],[data-testid="stExpandSidebarButton"]{display:none!important}
 .stAppDeployButton,[data-testid="stToolbar"] .stAppDeployButton{display:none}
 :focus-visible{outline:2px solid var(--bs-accent);outline-offset:2px;border-radius:6px}
@@ -91,8 +91,8 @@ header[data-testid="stHeader"] a[aria-current="page"],header[data-testid="stHead
 box-shadow:inset 0 -2px 0 var(--bs-accent)}
 
 /* ---- symmetric page header ---- */
-.bs-hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;margin:32px 0 24px}
-.bs-brand{display:flex;align-items:center;justify-content:center;gap:16px}
+.bs-hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;margin:0 0 24px;width:100%%}
+.bs-brand{display:flex;align-items:center;justify-content:center;gap:16px;width:100%%}
 .bs-brand h1{margin:0;padding:0;font-size:36px;line-height:1.1;color:var(--bs-text)}
 .bs-tag{color:var(--bs-muted);font-size:16px;line-height:1.55;max-width:760px;margin:0}
 .bs-page{text-align:center;margin:8px 0 24px}.bs-page h2{margin:0 0 4px;font-size:26px}.bs-page p{margin:0;color:var(--bs-muted)}
@@ -108,7 +108,7 @@ backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) satu
 .bs-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:0 0 24px}
 .bs-twin{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:24px 0 0}
 @media (max-width:1100px){.bs-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:760px){.bs-grid,.bs-grid2,.bs-twin{grid-template-columns:1fr}.block-container{padding:8px 12px 56px}}
+@media (max-width:760px){.bs-grid,.bs-grid2,.bs-twin{grid-template-columns:1fr}.block-container{padding:96px 12px 56px}}
 .bs-dot{display:inline-block;width:10px;height:10px;border-radius:50%%;margin-right:8px;vertical-align:baseline}
 
 .bs-strip{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:0 0 24px;font:500 13px/1.4 var(--bs-mono)}
@@ -159,7 +159,8 @@ color:var(--bs-muted);padding:14px 16px;border-bottom:1px solid var(--bs-border)
 @media (max-width:900px){.bs-stepper{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .bs-log{font:13px/1.6 var(--bs-mono);color:var(--bs-muted);background:var(--bs-surface2);border-radius:12px;padding:16px;white-space:pre-wrap;word-break:break-word}
 .bs-note{border-left:4px solid var(--bs-accent);background:var(--bs-accent-soft);padding:16px;border-radius:0 12px 12px 0;line-height:1.6}
-.bs-foot{text-align:center;color:var(--bs-muted);font-size:13px;line-height:1.6;margin:40px auto 0;max-width:900px}
+.bs-foot{display:block;text-align:center!important;color:var(--bs-muted);font-size:13px;line-height:1.7;margin:32px auto 0!important;max-width:900px;width:100%%}
+.bs-foot.cap{margin-top:12px!important}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition:none!important}}
 </style>
 """
@@ -295,7 +296,7 @@ def page_overview():
     mp = rd / "dashboard_map.html"
     if mp.exists():
         embed_html(themed_map(mp.read_text(encoding="utf-8")), 880)
-        st.caption("Orbital viewport · basemaps are for display only and are not analysis inputs.")
+        st.markdown("<div class='bs-foot cap'>Orbital viewport · basemaps are for display only and are not analysis inputs.</div>", unsafe_allow_html=True)
     else:
         st.markdown(empty_state("The map file is missing", "This run has no <code>dashboard_map.html</code>. Re-run the analysis to regenerate it."),
                     unsafe_allow_html=True)
@@ -305,7 +306,7 @@ def page_overview():
                 f"<div style='margin-top:8px'>{access_list(rows, 'cut_off')}</div></div>"
                 f"<div class='bs-card bs-list'><div class='bs-label'><span class='bs-dot' style='background:var(--bs-watch)'></span>Watch · longer route ({F['n_long']})</div>"
                 f"<div style='margin-top:8px'>{access_list(rows, 'longer_route')}</div></div></div>", unsafe_allow_html=True)
-    st.markdown("<p class='bs-foot'>Largest named settlements first. The full list is under <b>Settlements</b>.</p>", unsafe_allow_html=True)
+    st.markdown("<div class='bs-foot'>Largest named settlements first. The full list is under <b>Settlements</b>.</div>", unsafe_allow_html=True)
 
 
 def page_settlements():
@@ -510,9 +511,9 @@ PAGE_NEW = st.Page(page_new, title="New analysis", icon=":material/play_circle:"
 pg = st.navigation([PAGE_OVERVIEW, PAGE_SETT, PAGE_REPORT, PAGE_METHOD, PAGE_EMS, PAGE_NEW], position="top")
 
 # ------------------------------------------------------------------------------------------------ shared header (symmetric: centred brand, run picker, telemetry)
-st.markdown(f"<div class='bs-hero'><div class='bs-brand'>{LOGO}<h1>BeaconSpace</h1><span class='bs-badge proto'>EDUCATIONAL PROTOTYPE</span></div>"
-            "<p class='bs-tag'>Satellite flood-damage mapping for rescue teams: where the flood hit, what was damaged, and who is cut off. "
-            f"{esc(config.DISCLAIMER)}</p></div>", unsafe_allow_html=True)
+st.markdown(f"<div class='bs-hero'><div class='bs-brand'>{LOGO}<h1>BeaconSpace</h1></div>"
+            "<p class='bs-tag'>Satellite flood-damage mapping for rescue teams: where the flood hit, what was damaged, and who is cut off.</p></div>",
+            unsafe_allow_html=True)
 
 if runs and pg.title != "New analysis":
     names = [p.parent.name for p in runs]
@@ -537,4 +538,4 @@ if runs and pg.title != "New analysis":
 pg.run()
 
 yr = int(CTX["S"]["event_utc"][:4]) if CTX else 2026
-st.markdown("<p class='bs-foot'>" + " ".join(esc(a) for a in config.attribution(yr)[:3]) + "<br>" + esc(config.DISCLAIMER) + "</p>", unsafe_allow_html=True)
+st.markdown("<div class='bs-foot'>" + " ".join(esc(a) for a in config.attribution(yr)[:3]) + "</div>", unsafe_allow_html=True)

@@ -114,7 +114,7 @@ detector: {ai} &middot; radar tracks: {tracks} &middot; {opt}</p>
 <p>Two-track agreement covers {_fmt(f['agree_ha'], 0)} ha. Radar sees through cloud but cannot tell debris from other
 rough change with certainty; roads are blocked only if the mapped road (as of {f['osm']['snapshot']}) crosses the detected
 area, so unmapped roads, bridges that survived inside the mask and smaller-than-pixel damage are not captured. Satellites revisit
-every few days: this describes the scene as of the post-event pass, not the situation now. Verify before acting.</p>
+every few days: this describes the scene as of the post-event pass, not the situation now.</p>
 """
 
 
@@ -143,10 +143,7 @@ def nepali(f: dict) -> str:
 <h3>को को टाढा परेका छन् (नजिकको अस्पताल/सहरसँगको सडक सम्पर्क गुमेका)</h3>
 <table><tr><th>बस्ती</th><th>भवन</th><th>पहिलेको दूरी</th><th>पहिले सेवा दिने ठाउँ</th></tr>{cut_rows}</table>
 {flow}
-<div class=disc><b>सावधानी:</b> उपग्रह-आधारित अनुमानमा अनिश्चितता हुन्छ; कारबाही गर्नुअघि स्थलगत पुष्टि गर्नुहोस्।
-यो चित्र उपग्रहले अन्तिम पटक हेरेको समयको हो, अहिलेको अवस्था होइन। यो शैक्षिक प्रोटोटाइप हो, सञ्चालनात्मक उपकरण होइन।</div>
-<p class=meta>सबै अङ्क प्रणालीका नक्सा/गणनाबाट स्वचालित रूपमा लिइएका हुन्; कुनै भाषा मोडेलले अङ्क बनाएको होइन।
-(नेपाली पाठ टेम्प्लेटमा आधारित छ; प्रयोगअघि मूल नेपाली भाषीबाट समीक्षा आवश्यक।)</p>
+<p class=meta>सबै अङ्क प्रणालीका नक्सा/गणनाबाट स्वचालित रूपमा लिइएका हुन्; कुनै भाषा मोडेलले अङ्क बनाएको होइन।</p>
 """
 
 
@@ -175,9 +172,9 @@ def build_html(summary: dict, map_png: Path | None) -> str:
         img = ("<img class=map src='data:image/png;base64," + base64.b64encode(map_png.read_bytes()).decode() + "'>")
     foot = ("<div class=foot>" + " ".join(html.escape(a) for a in config.attribution(int(summary["event_utc"][:4]))) +
             f" OSM snapshot: {f['osm']['snapshot']} (pre-event). Generated automatically by BeaconSpace from its maps; no value is "
-            f"produced by a language model. {html.escape(config.DISCLAIMER)}</div>")
+            f"produced by a language model.</div>")
     return (f"<!doctype html><html lang=en><head><meta charset=utf-8><meta name='color-scheme' content='light'><title>BeaconSpace — situation report</title><style>{CSS}</style></head>"
-            f"<body><div class=page>{english(f)}{img}<div class=disc>{html.escape(config.DISCLAIMER)}</div>{foot}"
+            f"<body><div class=page>{english(f)}{img}{foot}"
             f"</div><div class='page ne'>{nepali(f)}{img}{foot}</div></body></html>")
 
 

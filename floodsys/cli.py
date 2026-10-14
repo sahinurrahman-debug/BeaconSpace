@@ -19,7 +19,7 @@ def parse_event(s: str) -> dt.datetime:
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="floodsys", description="Flood damage mapping from space (educational prototype)")
+    ap = argparse.ArgumentParser(prog="floodsys", description="BeaconSpace: flood damage mapping from space")
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run", help="run the full pipeline for an area and flood date")
     r.add_argument("--preset", choices=list(PRESETS))

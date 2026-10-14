@@ -29,8 +29,6 @@ def attribution(year: int = 2026) -> list:
 
 
 EMS_CREDIT = "European Union, Copernicus Emergency Management Service data"
-DISCLAIMER = ("Educational prototype – not an operational tool. Satellite-derived estimates carry uncertainty; "
-              "verify on the ground before acting.")
 
 # OpenStreetMap queries -------------------------------------------------------
 ROAD_CLASSES = ("motorway", "trunk", "primary", "secondary", "tertiary", "unclassified", "residential",

@@ -133,7 +133,7 @@ DIAGRAM = """
 
 BODY = f"""
 <h1>BeaconSpace — mapping flood damage from space</h1>
-<div class=sub>Case study: Trishuli / Bhote Koshi, 26 Aug 2026 · Multimodal AI Hackathon 2026 · Track B · AI component: flood-segmentation model · Educational prototype, not an operational tool.</div>
+<div class=sub>Case study: Trishuli / Bhote Koshi, 26 Aug 2026 · Multimodal AI Hackathon 2026 · Track B · AI component: flood-segmentation model</div>
 
 <h2>1 · What the system does</h2>
 <p>Given a bounding box and a flood date, the system downloads Sentinel-1/2, the Copernicus DEM and a pre-event OpenStreetMap snapshot,
@@ -224,7 +224,7 @@ a provenance file. It runs from raw data for any area/date: <code>python -m floo
 <li><b>Uncertainty is not propagated</b> into the counts; treat them as ± tens of percent (see EMS comparison).</li></ul>
 
 <h2>8 · Reproducibility, responsibility, citations</h2>
-<p>Code, tests (<code>pytest</code>), Colab notebook, README and per-run <code>provenance.json</code> are in the repository; the case study runs in ≈10 min once OSM tiles are cached. This disaster is recent: no images of victims are used; outputs are labelled as educational prototypes.
+<p>Code, tests (<code>pytest</code>), Colab notebook, README and per-run <code>provenance.json</code> are in the repository; the case study runs in ≈10 min once OSM tiles are cached. This disaster is recent: no images of victims are used.
 <br><b>Cite:</b> Bountos, N.I., Sdraka, M., Zavras, A., Karavias, A., Karasante, I., Herekakis, T., Thanasou, A., Michail, D., Papoutsis, I. (2024) <i>Kuro Siwo: 33 billion m² under the water</i>, NeurIPS Datasets &amp; Benchmarks. · Copernicus Sentinel-1/2 data 2026; Copernicus DEM GLO-30; © OpenStreetMap contributors (ODbL); {html.escape(config.EMS_CREDIT)} (activation EMSR927, checking only).</p>
 """
 

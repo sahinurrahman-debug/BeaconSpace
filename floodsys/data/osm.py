@@ -21,7 +21,7 @@ from shapely.geometry import LineString, Point, Polygon, shape
 
 from .. import config
 
-UA = {"User-Agent": "floodsys-hackathon/0.1 (educational prototype)"}
+UA = {"User-Agent": "BeaconSpace/0.1 (flood mapping)"}
 # Only mirrors that really support attic ([date:]) queries; others silently return *current* data.
 OVERPASS = ["https://overpass-api.de/api/interpreter"]
 

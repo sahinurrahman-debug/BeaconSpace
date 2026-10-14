@@ -109,7 +109,7 @@ def static_map(ctx: dict, path: Path):
         handles.append(Line2D([], [], color="#c77dff", lw=2, label="Traced flood path"))
     ax.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, -0.01), ncol=5, fontsize=7.5, frameon=False)
     fig.text(0.01, 0.005, f"Contains modified Copernicus Sentinel data {ctx.get('year', 2026)}. Copernicus DEM © DLR/Airbus. "
-             "© OpenStreetMap contributors. Educational prototype.", fontsize=5.5, color="#444")
+             "© OpenStreetMap contributors.", fontsize=5.5, color="#444")
     plt.tight_layout(rect=(0, 0.015, 1, 1))
     fig.savefig(path)
     plt.close(fig)
@@ -192,7 +192,7 @@ def interactive_map(out: Path, summary: dict, ctx: dict, path: Path):
            f"<div><b>{D['roads_total_hit_km']:,.0f}</b><span>km road hit</span></div>"
            f"<div class='crit'><b>{AC.get('cut_off', 0)}</b><span>cut off</span></div></div>"
            f"<div class='bs-m'>FLOOD {ev_date} · Contains modified Copernicus Sentinel data {summary['event_utc'][:4]} · © OpenStreetMap contributors · "
-           f"Copernicus DEM © DLR/Airbus · educational prototype</div></div>")
+           f"Copernicus DEM © DLR/Airbus</div></div>")
     legend = ("<div class='bs-glass bs-leg'>" + "".join(f"<div><i style='background:{c}'></i>{t}</div>" for c, t in (
         ("#3B82F6", "Flood water"), ("#FF8C00", "Debris / scour"), ("#FF4040", "Road hit"), ("#A78BFA", "Building affected"),
         (STATUS_COLOR["cut_off"], "Critical: cut off"), (STATUS_COLOR["longer_route"], "Watch: longer route"),
@@ -208,7 +208,7 @@ def interactive_map(out: Path, summary: dict, ctx: dict, path: Path):
                  f"<input id='bs-h' type='range' min='0' max='{meta['max_h']}' value='5' step='1' aria-label='Water level above nearest river in metres'>"
                  "<div class='bs-row'><div><b id='bs-a'>–</b><span>ha</span></div><div><b id='bs-b'>–</b><span>buildings</span></div>"
                  "<div><b id='bs-s'>–</b><span>settlements</span></div></div>"
-                 "<div class='bs-n'>Indicative, terrain-only (height above nearest drainage). Not a flood forecast.</div></div>")
+                 "<div class='bs-n'>Terrain-based preview from the height above the nearest drainage.</div></div>")
         js = ("<script>(function(){var D=" + json.dumps({k: meta[k] for k in ('bounds', 'area_ha', 'buildings', 'settlements', 'n_buildings', 'n_settlements')})
               + ";var SRC='data:image/png;base64," + png + "';var NAME='" + m.get_name() + "';"
               + _WR_JS + "})();</script>")

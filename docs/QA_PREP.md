@@ -30,7 +30,7 @@ The public ohsome *geometry* endpoint returned HTTP 403 from our network; the lo
 **10. How does "cut off" work, and what can go wrong?**
 Road graph from pre-event OSM; roads intersecting the mask (≥ 10 m) are removed; multi-source Dijkstra from hospitals/clinics/towns gives each settlement's nearest destination before/after. Cut-off = route existed before, not after. Weaknesses: unmapped tracks/footpaths/helicopter access; routes leaving the area assumed intact; settlements = OSM places + building clusters; no population data (not an allowed input), so we report buildings, not people.
 
-**11. What can't the system do?** Warn minutes ahead (satellites revisit every few days); see the situation *now*; separate mud/boulders/landslide or give depth/volume; map hill-slope landslides far from rivers; see through everything (wet snow, gorges); replace ground verification. It is an educational prototype.
+**11. What can't the system do?** Warn minutes ahead (satellites revisit every few days); see the situation *now*; separate mud/boulders/landslide or give depth/volume; map hill-slope landslides far from rivers; see through everything (wet snow, gorges); replace ground verification.
 
 **12. Why 20 m, not 10 m?** Speed for live use (4× fewer pixels; default 20 m, `--res 10` available). The network was trained with a random 2× downscale so it works at both; at 20 m the Kuro Siwo flood IoU is 0.71 vs 0.72.
 

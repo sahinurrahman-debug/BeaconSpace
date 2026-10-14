@@ -14,5 +14,5 @@ for f in files:
         shutil.copy2(src / f, dst / f); tot += (src / f).stat().st_size
 (dst / "README.txt").write_text("Output of `python -m floodsys run --preset trishuli`.\nContains modified Copernicus Sentinel data 2026. (c) OpenStreetMap contributors. "
     "Copernicus WorldDEM-30 (c) DLR e.V. 2010-2014 and (c) Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved.\n"
-    "evaluation_* files compare with 'European Union, Copernicus Emergency Management Service data' (EMSR927, checking only).\nEducational prototype.\n", encoding="utf-8")
+    "evaluation_* files compare with 'European Union, Copernicus Emergency Management Service data' (EMSR927, checking only).\n", encoding="utf-8")
 print(f"{len(files)} candidates -> {dst}  ({tot / 1e6:.1f} MB)")

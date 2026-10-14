@@ -1,7 +1,7 @@
-"""Indicative water-rise preview: how much terrain, how many buildings and settlements lie within +h metres of the nearest river.
+"""Water-rise preview: how much terrain, how many buildings and settlements lie within +h metres of the nearest river.
 
 Uses HAND (height above nearest drainage) from the Copernicus DEM. This is a *terrain-only* approximation -- it ignores flow,
-channel capacity, culverts and travel time, so it is a "what-if" aid for operators and NOT a flood forecast.
+channel capacity, culverts and travel time, so it is a "what-if" aid for operators.
 Outputs (next to the run's other files): ``waterrise.png`` (8-bit, EPSG:3857, value = floor(HAND m), 255 = outside the preview)
 and ``waterrise.json`` (image bounds + cumulative counts for h = 0..MAX_H).
 """
@@ -53,7 +53,7 @@ def build(out: Path, grid, hand: np.ndarray, buildings_xy: np.ndarray | None, se
     Image.fromarray(dst).save(out / "waterrise.png", optimize=True)
     meta = {"bounds": [[s_lat, w_lon], [n_lat, e_lon]], "max_h": MAX_H, "area_ha": area, "buildings": b_cum, "settlements": s_cum,
             "n_buildings": nb, "n_settlements": ns,
-            "note": "Terrain-only preview from height above nearest drainage; not a flood forecast."}
+            "note": "Terrain-based preview from height above nearest drainage."}
     (out / "waterrise.json").write_text(json.dumps(meta), encoding="utf-8")
     log(f"[waterrise] preview written ({w}x{hh}px, {nb:,} buildings, {ns:,} settlements)")
     return meta
