@@ -23,6 +23,6 @@ roads = rd("roads_hit.geojson")
 if roads is not None and len(roads): roads["hit"] = True
 ctx = {"grid": grid, "cls": cls, "db": db, "buildings": rd("buildings_affected.geojson"), "roads": roads,
        "settlements": gpd.read_file(out / "settlements.geojson"), "blocked": gpd.read_file(out / "blocked_segments.geojson"),
-       "destinations": gpd.read_file(out / "destinations.geojson"), "flow": fl, "bbox": tuple(S["bbox"])}
+       "destinations": gpd.read_file(out / "destinations.geojson"), "flow": fl, "bbox": tuple(S["bbox"]), "year": int(S["event_utc"][:4])}
 mapplot.static_map(ctx, out / "map.png"); sitrep.write_all(S, out); mapplot.interactive_map(out, S, ctx, out / "dashboard_map.html")
 print("rebuilt", out)

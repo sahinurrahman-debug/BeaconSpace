@@ -107,7 +107,7 @@ def static_map(ctx: dict, path: Path):
     if fp:
         handles.append(Line2D([], [], color="#c77dff", lw=2, label="Traced flood path"))
     ax.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, -0.01), ncol=5, fontsize=7.5, frameon=False)
-    fig.text(0.01, 0.005, "Contains modified Copernicus Sentinel data 2026. Copernicus DEM © DLR/Airbus. "
+    fig.text(0.01, 0.005, f"Contains modified Copernicus Sentinel data {ctx.get('year', 2026)}. Copernicus DEM © DLR/Airbus. "
              "© OpenStreetMap contributors. Educational prototype.", fontsize=5.5, color="#444")
     plt.tight_layout(rect=(0, 0.015, 1, 1))
     fig.savefig(path)
@@ -178,7 +178,7 @@ def interactive_map(out: Path, summary: dict, ctx: dict, path: Path):
              f"border-radius:6px;font:13px sans-serif;box-shadow:0 1px 4px #0004'>"
              f"<b>Flood impact – {summary['name']}</b><br>"
              f"Impacted: {summary['area_ha']['impact_total_ha']} ha &middot; cut-off settlements: {summary['access'].get('cut_off', 0)}"
-             f"<br><span style='font-size:10px;color:#555'>Contains modified Copernicus Sentinel data 2026 &middot; "
+             f"<br><span style='font-size:10px;color:#555'>Contains modified Copernicus Sentinel data {summary['event_utc'][:4]} &middot; "
              f"© OpenStreetMap contributors &middot; Copernicus DEM © DLR/Airbus. Educational prototype.</span></div>")
     m.get_root().html.add_child(folium.Element(title))
     m.fit_bounds([[b0, l0], [b1, l1]])

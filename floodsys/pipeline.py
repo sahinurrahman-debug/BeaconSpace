@@ -221,7 +221,7 @@ def run(cfg: RunConfig, log=print) -> dict:
     from .report import mapplot, sitrep
     ctx = {"grid": grid, "cls": cls, "db": results[0]["db"], "buildings": bstat, "roads": rstat_aoi,
            "settlements": acc["settlements"], "blocked": acc["blocked"], "destinations": acc["destinations"],
-           "flow": fp, "bbox": cfg.bbox}
+           "flow": fp, "bbox": cfg.bbox, "year": event.year}
     mapplot.static_map(ctx, out / "map.png")
     sitrep.write_all(summary, out, log=log)
     mapplot.interactive_map(out, summary, ctx, out / "dashboard_map.html")

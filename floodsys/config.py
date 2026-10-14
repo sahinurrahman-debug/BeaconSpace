@@ -23,6 +23,11 @@ ATTRIBUTION = [
     "© OpenStreetMap contributors.",
     "Training data: Kuro Siwo – Bountos et al., NeurIPS 2024 Datasets & Benchmarks (CC BY).",
 ]
+def attribution(year: int = 2026) -> list:
+    """Required attribution lines; the Sentinel line carries the year of the data actually used."""
+    return [a.replace("data 2026.", f"data {year}.") for a in ATTRIBUTION]
+
+
 EMS_CREDIT = "European Union, Copernicus Emergency Management Service data"
 DISCLAIMER = ("Educational prototype – not an operational tool. Satellite-derived estimates carry uncertainty; "
               "verify on the ground before acting.")

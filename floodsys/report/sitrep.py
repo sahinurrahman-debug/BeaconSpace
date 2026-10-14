@@ -172,7 +172,7 @@ def build_html(summary: dict, map_png: Path | None) -> str:
     img = ""
     if map_png and map_png.exists():
         img = ("<img class=map src='data:image/png;base64," + base64.b64encode(map_png.read_bytes()).decode() + "'>")
-    foot = ("<div class=foot>" + " ".join(html.escape(a) for a in config.ATTRIBUTION) +
+    foot = ("<div class=foot>" + " ".join(html.escape(a) for a in config.attribution(int(summary["event_utc"][:4]))) +
             f" OSM snapshot: {f['osm']['snapshot']} (pre-event). Generated automatically from the system's maps; no value is "
             f"produced by a language model. {html.escape(config.DISCLAIMER)}</div>")
     return (f"<!doctype html><html lang=en><head><meta charset=utf-8><title>Situation report</title><style>{CSS}</style></head>"

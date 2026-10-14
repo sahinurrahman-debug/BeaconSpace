@@ -38,6 +38,7 @@ E1 = J(R / "evaluation_emsr927_v1_physics_noseries.json")
 E2 = J(R / "evaluation_emsr927_v2_final.json")
 E3 = J(R / "evaluation_emsr927_v2_nomodel_ablation.json")
 S3 = J(R / "summary_v2_nomodel_ablation.json")
+MEL = J(R / "robustness_melamchi_2021_summary.json")
 M = J(R / "colab_metrics.json")
 NULL_V1 = J(R / "null_test_v1_two_image_pre.json")
 NULL_F = J(ROOT / "outputs" / "evaluation" / "null_test_v3_final_physics.json")
@@ -202,11 +203,12 @@ a provenance file. It runs from raw data for any area/date: <code>python -m floo
 
 <div class=note><b>What does the AI model add here? (ablation)</b> Running the same case study <i>without</i> the network: flood+debris {S3['area_ha']['impact_total_ha']:,.0f} ha vs {a['impact_total_ha']:,.0f} ha with it; EMS-area IoU {f2(E3['extent']['IoU'])} vs {f2(ev2['IoU'])}; EMS-affected buildings found {pct(E3['buildings']['recall'])} vs {pct(E2['buildings']['recall'])}; road coverage {pct(E3['roads']['recall'])} vs {pct(E2['roads']['recall'])}. <b>The network changes the Trishuli result by about 1 %</b>: the dominant class (debris/scour) comes from the change detector, EMS has no separate flood-water class that could reward the network, and the model's flood water ({a['flood water']:.0f} ha vs {S3['area_ha']['flood water']:.0f} ha) is small and still gated by terrain. The network's value is demonstrated on Kuro Siwo (open-water floods, §4), not on this debris-flow case.</div>
 
-<div class=pb></div>
 <h2>6 · False alarms: the null-event test</h2>
 <p>For fake “events” before the real flood we run the identical pipeline on same-track pairs where nothing happened; everything flagged is a false alarm by construction (area {NULL_V1['area_km2'] if NULL_V1 else ''} km², ha flagged).</p>
 <table><tr><th>Detector</th><th>Pre → post pair</th><th>false flood ha</th><th>false debris ha</th><th>ha per 1000 km²</th></tr>{null_table()}</table>
 <p>Late-season pairs (pre-event series in the monsoon): mean false alarm <b>{f'{late_v1:.0f}' if late_v1 else 'n/a'} ha</b> with the first detector → <b>{f'{late_f:.0f}' if late_f else 'n/a'} ha</b> final (physics) {f'→ {late_m:.0f} ha with the AI model' if late_m else ''}, against ≈1 000–1 200 ha of debris flagged for the real event. Early-July pairs stay noisy because their pre-event series ends before the monsoon began — <b>a real limitation</b>: the detector needs pre-event images from the same season.</p>
+
+<div class=good><b>Second Himalayan event, no reference map (robustness only).</b> The unchanged system was run on the June 2021 Melamchi flood (small area, different year, Sentinel-1A/1B, a 2021 OSM snapshot chosen automatically): it completed end to end and mapped {MEL['area_ha']['impact_total_ha']:,.0f} ha ({MEL['area_ha']['flood water']:.0f} ha water, {MEL['area_ha']['debris / scour']:.0f} ha debris), {MEL['damage']['buildings']['affected_total']} affected buildings of {MEL['damage']['buildings']['total']:,}, {MEL['damage']['bridges']['hit']}/{MEL['damage']['bridges']['total']} bridges hit and {MEL['access']['cut_off']} cut-off settlements; the traced flood path ({MEL['flowpath']['length_km']} km) follows the detected corridor through Melamchi Bazaar. <b>We have no reference for this event, so this shows the system runs on a new place and date — it is not an accuracy claim.</b> Isolated patches on a side tributary look like possible false alarms.</div>
 
 <h2>7 · Limitations — what the system cannot do</h2>
 <ul>
@@ -237,14 +239,18 @@ def main():
         return
     if pdf.exists():
         pdf.unlink()
-    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as prof:
-        subprocess.run([b, "--headless", "--disable-gpu", f"--user-data-dir={prof}", "--no-pdf-header-footer",
-                        f"--print-to-pdf={pdf}", (out / "Report.html").resolve().as_uri()], timeout=180, capture_output=True)
     import time
-    for _ in range(20):
+    for attempt in range(4):                       # headless Edge/Chrome occasionally exits without writing the file
+        mode = "--headless" if attempt % 2 == 0 else "--headless=new"
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as prof:
+            subprocess.run([b, mode, "--disable-gpu", "--no-sandbox", f"--user-data-dir={prof}", "--no-pdf-header-footer",
+                            f"--print-to-pdf={pdf}", (out / "Report.html").resolve().as_uri()], timeout=180, capture_output=True)
+        for _ in range(20):
+            if pdf.exists() and pdf.stat().st_size > 1000:
+                break
+            time.sleep(0.5)
         if pdf.exists() and pdf.stat().st_size > 1000:
             break
-        time.sleep(0.5)
     import pymupdf
     n = len(pymupdf.open(pdf))
     print(f"wrote {pdf} — {n} pages", "(OK ≤ 6)" if n <= 6 else "(TOO LONG: trim)")

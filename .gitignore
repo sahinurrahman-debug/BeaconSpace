@@ -1,10 +1,8 @@
 cache/
 outputs/
-outputs_*/
 __pycache__/
 *.pyc
 .venv/
-.pytest_cache/
 data/reference/
 _synth_work/
 models/*.pt

@@ -102,7 +102,7 @@ with tab_map:
     html = (rd / "dashboard_map.html")
     if html.exists():
         components.html(html.read_text(encoding="utf-8"), height=700, scrolling=False)
-    st.caption("Basemaps are for display only and are not analysis inputs. " + " ".join(config.ATTRIBUTION[:3]))
+    st.caption("Basemaps are for display only and are not analysis inputs. " + " ".join(config.attribution(int(S["event_utc"][:4]))[:3]))
 with tab_cut:
     df = pd.DataFrame(S["settlements"])
     if len(df):
