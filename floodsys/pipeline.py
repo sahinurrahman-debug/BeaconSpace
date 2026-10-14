@@ -54,7 +54,7 @@ def _write_raster(path: Path, arr: np.ndarray, grid: Grid, nodata=None):
 
 def _gdf_out(gdf: gpd.GeoDataFrame, path: Path, simplify: float = 0.0):
     if gdf is None or not len(gdf):
-        path.write_text('{"type":"FeatureCollection","features":[]}')
+        path.write_text('{"type":"FeatureCollection","features":[]}', encoding="utf-8")
         return
     g = gdf.copy()
     if simplify:
@@ -112,7 +112,7 @@ def run(cfg: RunConfig, log=print) -> dict:
         prob = None
         if model is not None:
             prob = model.predict(build_features(db, slope, grid.res))
-        res = detect.detect(db, slope, hand, grid.res, S.detect, model_prob=prob, s2=s2ev)
+        res = detect.detect(db, slope, hand, grid.res, S.detect, model_prob=prob, s2=s2ev, chan_dist=terrain["chan_dist"])
         res["db"] = db
         res["model_prob"] = prob
         results.append(res)
@@ -144,7 +144,9 @@ def run(cfg: RunConfig, log=print) -> dict:
     region = None
     if impact is not None:   # buildings only matter near the impacted corridor (keeps the slow public OSM fetch small)
         from shapely.ops import transform as _tf
-        region = _tf(grid.from_utm().transform, impact.buffer(4000).simplify(250))
+        big = polys[polys["area_ha"] >= 3.0]          # ignore tiny scattered detections
+        core = damage.impact_geometry(big) if len(big) else impact
+        region = _tf(grid.from_utm().transform, core.buffer(1500).simplify(150))
     osm.update(osmmod.load_osm(_pad(cfg.bbox, 0.005), snap, layers=("buildings",), log=log, region=region))
     prov["osm"] = {"snapshot": snap.isoformat(),
                    "provider": {k: v.attrs.get("provider") for k, v in osm.items()},
@@ -212,9 +214,9 @@ def run(cfg: RunConfig, log=print) -> dict:
         "noise": results[0]["noise"], "model": prov["model"], "osm": prov["osm"],
         "runtime_s": round(time.time() - t_start, 1),
     }
-    (out / "summary.json").write_text(json.dumps(summary, indent=2, default=str))
+    (out / "summary.json").write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
     prov["summary_file"] = "summary.json"
-    (out / "provenance.json").write_text(json.dumps(prov, indent=2, default=str))
+    (out / "provenance.json").write_text(json.dumps(prov, indent=2, default=str), encoding="utf-8")
 
     from .report import mapplot, sitrep
     ctx = {"grid": grid, "cls": cls, "db": results[0]["db"], "buildings": bstat, "roads": rstat_aoi,

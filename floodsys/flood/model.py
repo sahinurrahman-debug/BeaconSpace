@@ -43,7 +43,7 @@ class FloodModel:
         self.sess = ort.InferenceSession(str(path), providers=["CPUExecutionProvider"])
         self.input_name = self.sess.get_inputs()[0].name
         card = self.path.with_suffix(".json")
-        self.card = json.loads(card.read_text()) if card.exists() else {}
+        self.card = json.loads(card.read_text(encoding="utf-8")) if card.exists() else {}
 
     @classmethod
     def load_if_available(cls, path: Path):

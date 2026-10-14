@@ -48,6 +48,9 @@ class DetectParams:
     change_low_k: float = 2.5         # hysteresis low: x robust sigma of stable terrain
     change_high_k: float = 4.0        # hysteresis high (seed)
     min_change_db: float = 2.5        # and never below this many dB (smoothed VV or VH)
+    max_chan_dist_m: float = 150.0    # debris/scour must hug the drainage network (rivers with catchment >= chan_upa_km2)
+    chan_upa_km2: float = 5.0
+    variability_gain: float = 1.0     # scale of each pixel's own pre-event variability (std over the pre series)
     max_slope_water: float = 12.0     # deg: still water does not rest on steep slopes
     max_slope_debris: float = 35.0
     max_hand_water: float = 40.0      # m above nearest drainage

@@ -84,8 +84,8 @@ def search_acquisitions(bbox, start: dt.date, end: dt.date) -> list[Acquisition]
     return sorted(acqs, key=lambda a: a.when)
 
 
-def plan_pairs(acqs: list[Acquisition], event: dt.datetime, max_post_days: float = 30, n_pre: int = 2,
-               min_cov: float = 0.5, pre_window_days: float = 60, top: int = 3) -> list[Pair]:
+def plan_pairs(acqs: list[Acquisition], event: dt.datetime, max_post_days: float = 30, n_pre: int = 5,
+               min_cov: float = 0.5, pre_window_days: float = 80, top: int = 3) -> list[Pair]:
     """Same relative-orbit pairs: one pre/post for each track, ranked.
 
     Score favours (1) AOI coverage, (2) small delay after the event, (3) a pre-image
@@ -147,8 +147,20 @@ def _cache_key(pair: Pair, grid: Grid) -> Path:
     return d / f"{h}.npz"
 
 
+def _smooth_db(x: np.ndarray, res: float) -> np.ndarray:
+    """Window mean in the linear domain -> dB (speckle-robust), NaN where too little valid data."""
+    size = max(3, int(round(50.0 / res)) | 1)
+    ok = np.isfinite(x) & (x > 0)
+    w = uniform_filter(ok.astype("float32"), size)
+    m = uniform_filter(np.where(ok, x, 0.0).astype("float32"), size) / np.maximum(w, 1e-6)
+    out = 10 * np.log10(np.maximum(m, 1e-5))
+    out[w < 0.6] = np.nan
+    return out.astype("float32")
+
+
 def load_pair(pair: Pair, grid: Grid, log=print) -> dict:
-    """Return linear-power arrays: post_vv/vh and pre_vv/vh (mean of the pre images) + n_pre."""
+    """Linear-power arrays: post_vv/vh and pre_vv/vh (mean of the pre images), plus per-pixel *temporal std of the pre-event
+    series in dB* (``pre_std_vv/vh``, NaN if fewer than 3 pre images) which measures each pixel's natural variability."""
     f = _cache_key(pair, grid)
     if f.exists():
         z = np.load(f)
@@ -156,15 +168,32 @@ def load_pair(pair: Pair, grid: Grid, log=print) -> dict:
         return {k: z[k] for k in z.files}
     log(f"[s1] reading post {pair.post.label()} ...")
     post = _load_acq(pair.post, grid)
-    pres = []
-    for a in pair.pre:
-        log(f"[s1] reading pre  {a.label()} ...")
-        pres.append(_load_acq(a, grid))
     out = {"post_vv": post["vv"], "post_vh": post["vh"]}
+    acc = {pol: {"n": np.zeros(grid.shape, "float32"), "mean": np.zeros(grid.shape, "float32"),
+                 "m2": np.zeros(grid.shape, "float32"), "lin": np.zeros(grid.shape, "float32"),
+                 "lin_n": np.zeros(grid.shape, "float32")} for pol in ("vv", "vh")}
+    for i, a in enumerate(pair.pre):
+        log(f"[s1] reading pre  {a.label()} ...")
+        arr = _load_acq(a, grid)
+        for pol in ("vv", "vh"):
+            ac, x = acc[pol], arr[pol]
+            if i == 0:
+                out[f"pre1_{pol}"] = x
+            ok = np.isfinite(x) & (x > 0)
+            ac["lin"][ok] += x[ok]
+            ac["lin_n"][ok] += 1
+            d = _smooth_db(x, grid.res)
+            okd = np.isfinite(d)
+            ac["n"][okd] += 1                                     # Welford running mean / M2
+            delta = np.where(okd, d - ac["mean"], 0)
+            ac["mean"][okd] += (delta[okd] / ac["n"][okd])
+            ac["m2"][okd] += (delta * np.where(okd, d - ac["mean"], 0))[okd]
     for pol in ("vv", "vh"):
-        stack = np.stack([p[pol] for p in pres])
-        out[f"pre_{pol}"] = np.nanmean(stack, axis=0).astype("float32")  # linear-domain temporal mean
-        out[f"pre1_{pol}"] = pres[0][pol]
+        ac = acc[pol]
+        out[f"pre_{pol}"] = np.where(ac["lin_n"] > 0, ac["lin"] / np.maximum(ac["lin_n"], 1), np.nan).astype("float32")
+        std = np.sqrt(ac["m2"] / np.maximum(ac["n"] - 1, 1))
+        std[ac["n"] < 3] = np.nan
+        out[f"pre_std_{pol}"] = std.astype("float32")
     np.savez_compressed(f, **out)
     return out
 
@@ -200,4 +229,7 @@ def prepare_db(stack: dict, res: float, despeckle: bool = True) -> dict:
             x = lee_filter(x, 3)
         out[k] = to_db(x)
         out[k][~np.isfinite(stack[k])] = np.nan
+    for k in ("pre_std_vv", "pre_std_vh"):
+        if k in stack:
+            out[k] = stack[k]
     return out

@@ -102,11 +102,22 @@ def _idx(b):
 def optical_evidence(bbox, event: dt.datetime, grid: Grid, p, post_days: int = 14, pre_days: int = 30,
                      log=print) -> dict | None:
     """Return boolean evidence layers on ``grid`` or ``None`` if no usable cloud-free pixels exist."""
+    import hashlib
+    key = hashlib.sha1(repr((bbox, event.isoformat(), grid.res, pre_days, post_days)).encode()).hexdigest()[:14]
+    cf = config.CACHE_DIR / "s2" / f"{key}.npz"
+    if cf.exists():
+        z = np.load(cf, allow_pickle=True)
+        if bool(z["valid"]):
+            log("[s2] cache hit")
+            return {"water": z["water"], "debris": z["debris"], "clear": z["clear"], "clear_fraction": float(z["clear_fraction"]),
+                    "post_dates": list(z["post_dates"]), "pre_dates": list(z["pre_dates"]), "ndvi_post": None, "mndwi_post": None}
+        return None
     d0 = event.date()
     days = search(bbox, d0 - dt.timedelta(days=pre_days), d0 + dt.timedelta(days=post_days))
     pre_order = [d for d in sorted(days, reverse=True) if d < d0]
     post_order = [d for d in sorted(days) if d > d0]
     log(f"[s2] {len(pre_order)} pre-event and {len(post_order)} post-event dates in catalogue")
+    cf.parent.mkdir(parents=True, exist_ok=True)
     if not pre_order or not post_order:
         return None
     log("[s2] post-event composite:")
@@ -129,6 +140,8 @@ def optical_evidence(bbox, event: dt.datetime, grid: Grid, p, post_days: int = 1
     # speckle-sized blobs are not evidence
     water = ndi.binary_opening(np.nan_to_num(water, nan=0).astype(bool), np.ones((2, 2))) & clear
     debris = ndi.binary_opening(np.nan_to_num(debris, nan=0).astype(bool), np.ones((2, 2))) & clear
+    np.savez_compressed(cf, valid=True, water=water, debris=debris, clear=clear, clear_fraction=float(clear.mean()),
+                        post_dates=np.array([d.isoformat() for d in used_post]), pre_dates=np.array([d.isoformat() for d in used_pre]))
     return {"water": water, "debris": debris, "clear": clear, "clear_fraction": float(clear.mean()),
             "post_dates": [d.isoformat() for d in used_post], "pre_dates": [d.isoformat() for d in used_pre],
             "ndvi_post": nv1, "mndwi_post": mw1}

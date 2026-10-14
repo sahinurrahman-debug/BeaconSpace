@@ -56,7 +56,7 @@ def _clean(mask: np.ndarray, min_px: int) -> np.ndarray:
 
 
 def detect(db: dict, slope: np.ndarray, hand: np.ndarray, res: float, p: DetectParams | None = None,
-           model_prob: np.ndarray | None = None, s2: dict | None = None) -> dict:
+           model_prob: np.ndarray | None = None, s2: dict | None = None, chan_dist: np.ndarray | None = None) -> dict:
     """Run the change detector. ``db`` holds post/pre VV/VH in dB on the analysis grid."""
     p = p or DetectParams()
     pv, ph, qv, qh = db["post_vv"], db["post_vh"], db["pre_vv"], db["pre_vh"]
@@ -91,11 +91,22 @@ def detect(db: dict, slope: np.ndarray, hand: np.ndarray, res: float, p: DetectP
     water = _clean(water, min_px)
 
     # --- debris / scour / deposition: significant two-polarisation change that is not new water
-    mag = np.fmax(np.abs(np.nan_to_num(svv - mv)), np.abs(np.nan_to_num(svh - mh)))
+    # Natural variability of each pixel from the pre-event series (fields, wet terraces, forest canopy fluctuate from pass to
+    # pass; river gravel and bare slopes do not).  A change only counts relative to what that pixel normally does.
+    sd_vv = np.full(svv.shape, sv, "float32")
+    sd_vh = np.full(svh.shape, sh, "float32")
+    have_series = db.get("pre_std_vv") is not None and np.isfinite(db["pre_std_vv"]).mean() > 0.3
+    if have_series:
+        def eff(std, floor):
+            st = ndi.uniform_filter(np.nan_to_num(std, nan=floor), 5)          # stabilise a 4-dof estimate spatially
+            return np.maximum(st * p.variability_gain, floor).astype("float32")
+        sd_vv, sd_vh = eff(db["pre_std_vv"], sv), eff(db["pre_std_vh"], sh)
+    zvv, zvh = (svv - mv) / sd_vv, (svh - mh) / sd_vh
     zmag = np.fmax(np.abs(np.nan_to_num(zvv)), np.abs(np.nan_to_num(zvh)))
-    low = np.maximum(p.min_change_db, p.change_low_k * np.maximum(sv, sh))
-    high = np.maximum(p.min_change_db + 1.5, p.change_high_k * np.maximum(sv, sh))
-    big = apply_hysteresis_threshold(np.where(valid & terrain_ok_d, mag, 0), low, high) & valid
+    mag_db = np.fmax(np.abs(np.nan_to_num(svv - mv)), np.abs(np.nan_to_num(svh - mh)))
+    near_chan = (chan_dist <= p.max_chan_dist_m) if chan_dist is not None else np.ones(slope.shape, bool)
+    big = (apply_hysteresis_threshold(np.where(valid & terrain_ok_d & near_chan, zmag, 0), p.change_low_k, p.change_high_k) & valid
+           & (mag_db >= p.min_change_db))
     debris = big & terrain_ok_d & ~water & ~perm
     if s2 is not None and s2.get("debris") is not None:
         # Optical data only ADDS evidence (where the sky is clear); it never vetoes radar, because debris on

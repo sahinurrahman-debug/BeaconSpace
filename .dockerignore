@@ -1,0 +1,10 @@
+cache/
+outputs/
+outputs_*/
+.venv/
+.git/
+__pycache__/
+.pytest_cache/
+data/reference/
+_synth_work/
+*.pyc

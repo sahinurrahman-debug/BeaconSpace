@@ -87,7 +87,7 @@ name = st.session_state.get("sel_run") if mode == "Run a new analysis" else sel
 rd = OUT / (name or runs[0].parent.name)
 if not (rd / "summary.json").exists():
     rd = runs[0].parent
-S = json.loads((rd / "summary.json").read_text())
+S = json.loads((rd / "summary.json").read_text(encoding="utf-8"))
 F = facts(S)
 
 c = st.columns(5)
@@ -135,11 +135,11 @@ with tab_data:
     st.write("**Noise floor of stable terrain (dB):**", S["noise"])
     if (rd / "provenance.json").exists():
         with st.expander("Full provenance (parameters, forbidden inputs used = none)"):
-            st.json(json.loads((rd / "provenance.json").read_text()))
+            st.json(json.loads((rd / "provenance.json").read_text(encoding="utf-8")))
 with tab_eval:
     ev = rd / "evaluation_emsr927.json"
     if ev.exists():
-        st.json(json.loads(ev.read_text()))
+        st.json(json.loads(ev.read_text(encoding="utf-8")))
         for f in sorted(rd.glob("evaluation_*.png")):
             st.image(str(f))
     else:

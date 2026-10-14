@@ -151,3 +151,16 @@ def test_sitrep_numbers_come_from_summary():
     for needle in ("42 ha", "Gumba", "33", "2/5", "२/५"):
         assert needle in html or needle.replace("2/5", "2/5") in html
     assert "Contains modified Copernicus Sentinel data 2026." in html and "OpenStreetMap contributors" in html
+
+
+def test_debris_must_hug_the_drainage_network():
+    db, slope, hand, water, debris, shadow = synth_scene()
+    cd = np.full(slope.shape, 2000.0, "float32")
+    cd[95:125, :] = 20.0                                   # drainage along the valley floor only
+    near = detect.detect(db, slope, hand, 20.0, DetectParams(), chan_dist=cd)["cls"]
+    assert (near[debris] == detect.DEBRIS).mean() > 0.8      # debris in the valley kept
+    db2 = {k: v.copy() for k, v in db.items()}
+    for k in ("post_vv", "post_vh"):
+        db2[k][150:170, 30:120] += 7                           # field-like change far from any river
+    r = detect.detect(db2, slope, np.full(slope.shape, 3.0, "float32"), 20.0, DetectParams(), chan_dist=cd)["cls"]
+    assert not (r[150:170, 30:120] == detect.DEBRIS).any()

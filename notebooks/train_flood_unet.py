@@ -307,7 +307,8 @@ model.load_state_dict(torch.load(OUT / "flood_unet.pt", map_location=DEV))
 
 # %% [markdown]
 # ## 4. Evaluation on **held-out events** (never seen in training)
-# * Kuro Siwo's official test split = 10 flood events on all continents, none used for training.
+# * ⚠️ The Hugging Face `test_GRD` shards are **not** an event-level hold-out: many of their events also occur in `train_GRD`.
+#   The cell below therefore lists the events and reports a separate **"unseen events"** result (events absent from the training patches) — quote *that* as the honest generalisation number.
 # * Reported at 10 m (native) and 20 m (what the live pipeline runs at by default), overall and for a **mountainous subset**
 #   (mean slope ≥ 10°, the closest proxy to Himalayan terrain available inside the benchmark).
 # * Compared with a **physics-based threshold baseline** (dark & dropped & flat) so we know the network really adds value.
@@ -329,12 +330,21 @@ def baseline_cm(ds):
 def loader(ds, ids=None):
     return torch.utils.data.DataLoader(ds if ids is None else torch.utils.data.Subset(ds, ids), batch_size=BATCH, num_workers=NW)
 
+train_events = {m["event"] for f in train_files for m in json.load(open(f.with_suffix(".meta.json")))}
 results = {}
 for mode in ("10m", "20m"):
     ds = KS(test_files, False, mode)
     cm = evaluate(loader(ds))
+    unseen_idx = [i for i, m in enumerate(ds.meta) if m["event"] not in train_events]
+    overlap = sorted({m["event"] for m in ds.meta} & train_events)
+    unseen = sorted({ds.meta[i]["event"] for i in unseen_idx})
+    print(f"[{mode}] test-shard events also in training: {len(overlap)} | UNSEEN events: {unseen} ({len(unseen_idx)} patches)")
     mount_idx = [i for i, m in enumerate(ds.meta) if m["slope_mean"] >= 10]
-    res = {"all": scores(cm), "n_patches": len(ds)}
+    res = {"all": scores(cm), "n_patches": len(ds), "unseen_events": unseen, "events_overlapping_training": overlap}
+    if len(unseen_idx) > 10:
+        res["unseen_events_pooled"] = scores(evaluate(loader(ds, unseen_idx)))
+        print(f"       UNSEEN-event flood IoU {res['unseen_events_pooled']['flood']['iou']:.3f}  F1 {res['unseen_events_pooled']['flood']['f1']:.3f}  "
+              f"P {res['unseen_events_pooled']['flood']['precision']:.3f}  R {res['unseen_events_pooled']['flood']['recall']:.3f}   <-- quote this one")
     if len(mount_idx) > 10:
         res["mountain_slope_ge_10deg"] = scores(evaluate(loader(ds, mount_idx))); res["n_mountain_patches"] = len(mount_idx)
     sub_ids = list(range(0, len(ds), max(1, len(ds) // 600)))
@@ -416,10 +426,12 @@ card = {
     "input": "7 channels: post VV, post VH, pre VV, pre VH (dB, scaled), smoothed change VV/VH, slope; see floodsys/flood/model.py",
     "training_data": "Kuro Siwo GRD (Bountos et al., NeurIPS 2024, CC BY)",
     "trained_on": f"{len(train_ds)} patches from {len(train_files)} train shards; epochs={EPOCHS}",
-    "held_out_metrics": {k: v["all"]["flood"] for k, v in results.items() if isinstance(v, dict) and "all" in v},
+    "metrics_all_test_shard_patches_NOT_event_held_out": {k: v["all"]["flood"] for k, v in results.items() if isinstance(v, dict) and "all" in v},
+    "unseen_event_metrics": {k: v.get("unseen_events_pooled", {}).get("flood") for k, v in results.items() if isinstance(v, dict) and "all" in v},
+    "caveat": "only unseen_event_metrics are event-held-out",
     "false_alarm_rate_flood_free": fpr, "created": time.strftime("%Y-%m-%d"),
     "limitations": "Trained mostly on low-relief floods; debris flows are not a label class; unseen terrain may degrade.",
 }
 json.dump(card, open(OUT / "flood_unet.json", "w"), indent=2, default=float)
-print(json.dumps(card["held_out_metrics"], indent=2, default=float))
+print(json.dumps(card["unseen_event_metrics"], indent=2, default=float))
 print("\nDONE. Files are in", OUT, "\n  flood_unet.onnx + flood_unet.json  ->  copy into the repo's models/ folder.")

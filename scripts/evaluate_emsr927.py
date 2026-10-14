@@ -67,7 +67,7 @@ def read_all(fs):
     return pd.concat(gs, ignore_index=True) if gs else gpd.GeoDataFrame(geometry=[], crs=4326)
 
 
-S = json.loads((a.run / "summary.json").read_text())
+S = json.loads((a.run / "summary.json").read_text(encoding="utf-8"))
 grid_crs = "EPSG:326" + str(int((S["bbox"][0] + S["bbox"][2]) / 2 // 6 + 31))
 res = {"reference": "Copernicus EMS EMSR927 (check only)", "run": a.run.name}
 
@@ -162,5 +162,5 @@ if len(tl) and rh.exists():
                     "recall": round(both / max(ref_u.length / 1e3, 1e-9), 3),
                     "precision": round(our_u.intersection(ref_u.buffer(30)).length / max(our_u.length, 1e-9), 3)}
 
-(a.run / "evaluation_emsr927.json").write_text(json.dumps(res, indent=2))
+(a.run / "evaluation_emsr927.json").write_text(json.dumps(res, indent=2), encoding="utf-8")
 print(json.dumps(res, indent=2))

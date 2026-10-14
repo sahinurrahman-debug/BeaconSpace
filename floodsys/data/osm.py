@@ -102,7 +102,7 @@ def _overpass_ql(layer, tile, snapshot):
         return head + f'way["building"]{bb};out tags geom;'
     if layer == "places":
         pl = "|".join(config.PLACE_CLASSES)
-        return head + f'node["place"~"^({pl})$"]{bb};out tags;'
+        return head + f'node["place"~"^({pl})$"]{bb};out body;'
     if layer == "health":
         return (head + f'(nwr["amenity"~"^(hospital|clinic|doctors)$"]{bb};'
                 f'nwr["healthcare"~"^(hospital|clinic|centre)$"]{bb};);out tags center;')
@@ -120,35 +120,48 @@ def _overpass_fetch(bbox, snapshot, layer, log=print, region=None):
     tdir.mkdir(parents=True, exist_ok=True)
     elements, pending = [], []
     for tile in tiles:
-        tf = tdir / (hashlib.sha1(f"{layer}{snapshot}{[round(v, 5) for v in tile]}".encode()).hexdigest()[:16] + ".json")
+        tf = tdir / (hashlib.sha1(f"{layer}{snapshot}{[round(v, 5) for v in tile]}{'v2' if layer == 'places' else ''}".encode()).hexdigest()[:16] + ".json")
+        bundled = config.ROOT / "data" / "osm_tiles" / (tf.stem + ".json.gz")      # shipped with the repo (ODbL, pre-event)
         if tf.exists():
-            elements.extend(json.loads(tf.read_text()))
+            elements.extend(json.loads(tf.read_text(encoding="utf-8")))
+        elif bundled.exists():
+            import gzip
+            els = json.loads(gzip.decompress(bundled.read_bytes()).decode("utf-8"))
+            tf.write_text(json.dumps(els), encoding="utf-8")                          # warm the local cache
+            elements.extend(els)
         else:
             pending.append((tile, tf))
     log(f"[osm]   {layer}: {len(tiles) - len(pending)}/{len(tiles)} tiles cached, {len(pending)} to fetch")
+    from concurrent.futures import ThreadPoolExecutor
+
+    def fetch_one(item):
+        tile, tf = item
+        q = _overpass_ql(layer, tile, snapshot).replace("[timeout:60]", "[timeout:240]")
+        for attempt in range(3):
+            try:
+                r = requests.post(OVERPASS[0], data={"data": q}, timeout=260, headers=UA)
+                if r.status_code == 200:
+                    els = r.json().get("elements", [])
+                    tf.write_text(json.dumps(els), encoding="utf-8")
+                    return els
+                if r.status_code == 429:
+                    time.sleep(40)
+            except (requests.RequestException, ValueError):
+                pass
+            time.sleep(10 * (attempt + 1))
+        return None
+
+    workers = 2 if layer == "buildings" else 1
     for rnd in range(6):  # several passes: a busy public server fails tiles at random
         failed = []
-        for i, (tile, tf) in enumerate(pending):
-            q = _overpass_ql(layer, tile, snapshot).replace("[timeout:60]", "[timeout:240]")
-            ok = False
-            for attempt in range(3):
-                try:
-                    r = requests.post(OVERPASS[0], data={"data": q}, timeout=260, headers=UA)
-                    if r.status_code == 200:
-                        els = r.json().get("elements", [])
-                        tf.write_text(json.dumps(els))
-                        elements.extend(els)
-                        ok = True
-                        break
-                    if r.status_code == 429:
-                        time.sleep(40)
-                except (requests.RequestException, ValueError):
-                    pass
-                time.sleep(10 * (attempt + 1))
-            if not ok:
-                failed.append((tile, tf))
-            if (i + 1) % 10 == 0:
-                log(f"[osm]   {layer}: pass {rnd + 1}, {i + 1}/{len(pending)} (failed so far {len(failed)})")
+        with ThreadPoolExecutor(workers) as ex:
+            for i, (item, els) in enumerate(zip(pending, ex.map(fetch_one, pending))):
+                if els is None:
+                    failed.append(item)
+                else:
+                    elements.extend(els)
+                if (i + 1) % 10 == 0:
+                    log(f"[osm]   {layer}: pass {rnd + 1}, {i + 1}/{len(pending)} (failed so far {len(failed)})")
         pending = failed
         if not pending:
             break
@@ -215,7 +228,7 @@ def load_osm(bbox, snapshot: dt.date, layers=("roads", "buildings", "places", "h
         meta = d / f"{layer}_{key}.json"
         if f.exists():
             g = gpd.read_file(f)
-            g.attrs["provider"] = json.loads(meta.read_text())["provider"] if meta.exists() else "cache"
+            g.attrs["provider"] = json.loads(meta.read_text(encoding="utf-8"))["provider"] if meta.exists() else "cache"
             out[layer] = g
             log(f"[osm] {layer}: {len(g)} features (cache, {g.attrs['provider']})")
             continue
@@ -238,7 +251,7 @@ def load_osm(bbox, snapshot: dt.date, layers=("roads", "buildings", "places", "h
         if len(gdf):
             gdf = _tidy(gdf, layer)
             gdf.to_file(f, driver="GPKG")
-            meta.write_text(json.dumps({"provider": provider, "snapshot": snapshot.isoformat()}))
+            meta.write_text(json.dumps({"provider": provider, "snapshot": snapshot.isoformat()}), encoding="utf-8")
         gdf.attrs["provider"] = provider
         out[layer] = gdf
         log(f"[osm] {layer}: {len(gdf)} features ({provider})")

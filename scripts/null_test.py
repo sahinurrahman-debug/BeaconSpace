@@ -27,6 +27,8 @@ ap.add_argument("--preset", default="trishuli")
 ap.add_argument("--dates", nargs="+", required=True, help="fake event dates (must be well before the real event)")
 ap.add_argument("--res", type=float, default=20.0)
 ap.add_argument("--no-model", action="store_true")
+ap.add_argument("--with-event", action="store_true", help="also report the real event pairs (signal next to noise)")
+ap.add_argument("--tag", default="")
 a = ap.parse_args()
 
 p = PRESETS[a.preset]
@@ -36,8 +38,9 @@ grid = Grid.from_lonlat_bbox(bbox, a.res)
 terr = demmod.terrain_layers(grid)
 model = None if a.no_model else FloodModel.load_if_available(config.MODEL_PATH)
 area_km2 = grid.width * grid.height * (grid.res / 1000) ** 2
-acqs = s1mod.search_acquisitions(bbox, dt.date(2026, 5, 1), real.date())
+acqs = s1mod.search_acquisitions(bbox, dt.date(2026, 5, 1), real.date() + dt.timedelta(days=40))   # null pairs below only use images before the flood
 rows = []
+real_rows = []
 for d in a.dates:
     ev = dt.datetime.fromisoformat(d).replace(tzinfo=UTC, hour=12)
     # only images strictly before the real event may be used
@@ -47,17 +50,29 @@ for d in a.dates:
         st = s1mod.load_pair(pr, grid)
         db = s1mod.prepare_db(st, grid.res)
         prob = model.predict(build_features(db, terr["slope"], grid.res)) if model else None
-        r = detect.detect(db, terr["slope"], terr["hand"], grid.res, model_prob=prob)
+        r = detect.detect(db, terr["slope"], terr["hand"], grid.res, model_prob=prob, chan_dist=terr["chan_dist"])
         ha = grid.res ** 2 / 1e4
         fl, de = float((r["cls"] == detect.FLOOD).sum() * ha), float((r["cls"] == detect.DEBRIS).sum() * ha)
         rows.append({"fake_event": d, "rel_orbit": pr.post.rel_orbit, "pre": pr.pre[0].when.date().isoformat(),
                      "post": pr.post.when.date().isoformat(), "false_flood_ha": round(fl, 1), "false_debris_ha": round(de, 1),
                      "per_1000km2_ha": round((fl + de) / area_km2 * 1000, 1)})
         print(rows[-1], flush=True)
+if a.with_event:
+    for pr in s1mod.plan_pairs(acqs, real, top=2):
+        st = s1mod.load_pair(pr, grid)
+        db = s1mod.prepare_db(st, grid.res)
+        prob = model.predict(build_features(db, terr["slope"], grid.res)) if model else None
+        r = detect.detect(db, terr["slope"], terr["hand"], grid.res, model_prob=prob, chan_dist=terr["chan_dist"])
+        ha = grid.res ** 2 / 1e4
+        ev_row = {"fake_event": "REAL EVENT", "rel_orbit": pr.post.rel_orbit, "pre": pr.pre[0].when.date().isoformat(),
+                  "post": pr.post.when.date().isoformat(), "flood_ha": round(float((r["cls"] == detect.FLOOD).sum() * ha), 1),
+                  "debris_ha": round(float((r["cls"] == detect.DEBRIS).sum() * ha), 1)}
+        print(ev_row, flush=True)
+        real_rows.append(ev_row)
 out = config.OUTPUT_DIR / "evaluation"
 out.mkdir(parents=True, exist_ok=True)
-summary = {"area_km2": round(area_km2, 1), "pairs": rows,
+summary = {"area_km2": round(area_km2, 1), "pairs": rows, "real_event": real_rows,
            "mean_false_alarm_ha_per_1000km2": round(float(np.mean([r["per_1000km2_ha"] for r in rows])), 2) if rows else None,
            "model": None if model is None else model.path.name}
-(out / "null_test.json").write_text(json.dumps(summary, indent=2))
+(out / f"null_test{a.tag}.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
 print(json.dumps(summary, indent=2))

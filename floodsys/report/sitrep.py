@@ -6,6 +6,7 @@ so nothing can be invented by a language model. ``floodsys.copilot`` offers Q&A 
 from __future__ import annotations
 
 import base64
+import time
 import html
 import shutil
 import subprocess
@@ -14,6 +15,20 @@ from pathlib import Path
 from .. import config
 
 DEV = str.maketrans("0123456789", "\u0966\u0967\u0968\u0969\u096a\u096b\u096c\u096d\u096e\u096f")
+
+
+def ne_name(name) -> str:
+    """Localise the generic parts of auto-generated names (real OSM names are already Nepali)."""
+    import re
+    n = html.escape(str(name))
+    n = re.sub(r"Unnamed settlement #(\d+) \(near (.+?), ([\d.]+) km\)",
+               lambda m: f"नाम नखुलेको बस्ती #{ne(m.group(1))} ({m.group(2)} नजिक, {ne(m.group(3))} कि.मी.)", n)
+    n = n.replace("Unnamed settlement", "नाम नखुलेको बस्ती")
+    for en, npl in (("hospital (unnamed)", "अस्पताल (नाम नखुलेको)"), ("clinic (unnamed)", "क्लिनिक (नाम नखुलेको)"),
+                    ("doctors (unnamed)", "डाक्टर क्लिनिक (नाम नखुलेको)"), ("health facility (unnamed)", "स्वास्थ्य संस्था (नाम नखुलेको)"),
+                    ("village (unnamed)", "गाउँ (नाम नखुलेको)"), ("hamlet (unnamed)", "बस्ती (नाम नखुलेको)")):
+        n = n.replace(en, npl)
+    return n
 
 
 def ne(x) -> str:
@@ -27,14 +42,24 @@ def _fmt(x, nd=1):
     return f"{x:,.{nd}f}" if isinstance(x, float) else f"{x:,}"
 
 
+def _title(name: str) -> str:
+    from ..presets import PRESETS
+    key = name.split("_")[0]
+    return PRESETS[key]["label"] if key in PRESETS else name.replace("_", " ")
+
+
+def _named(rows):
+    return [r for r in rows if "unnamed" not in str(r["name"]).lower()]
+
+
 def facts(s: dict) -> dict:
     """Flatten the summary into the figures used by the text (single source of truth)."""
     a, d, ac = s["area_ha"], s["damage"], s["access"]
     cut = sorted(s["cut_off"], key=lambda r: -r["n_buildings"])
-    longer = [r for r in s["settlements"] if r["status"] == "longer_route"]
+    longer = sorted([r for r in s["settlements"] if r["status"] == "longer_route"], key=lambda r: -r["n_buildings"])
     prim = d["roads"].get("primary", {"hit_km": 0.0, "total_km": 0.0})
     return {
-        "name": s["name"].replace("_", " "), "event": s["event_utc"][:10], "res": int(s["resolution_m"]),
+        "name": _title(s["name"]), "event": s["event_utc"][:16].replace("T", " ") + " UTC", "res": int(s["resolution_m"]),
         "area_km2": s["area_km2"], "flood_ha": a["flood water"], "debris_ha": a["debris / scour"],
         "impact_ha": a["impact_total_ha"], "perm_ha": a["permanent water"],
         "b_total": d["buildings"]["total"], "b_aff": d["buildings"]["affected_total"],
@@ -43,7 +68,7 @@ def facts(s: dict) -> dict:
         "br_total": d["bridges"]["total"], "br_hit": d["bridges"]["hit"],
         "n_sett": ac.get("settlements", 0), "n_cut": ac.get("cut_off", 0), "n_long": ac.get("longer_route", 0),
         "n_conn": ac.get("connected", 0), "n_na": ac.get("not_assessable", 0) + ac.get("no_road_data", 0),
-        "b_cut": ac.get("buildings_in_cut_off", 0), "cut": cut[:8], "longer": longer[:5],
+        "b_cut": ac.get("buildings_in_cut_off", 0), "cut": cut[:8], "longer": longer[:5], "n_longer_all": len(longer),
         "pairs": s["s1_pairs"], "s2": s["s2"], "model": s["model"], "osm": s["osm"],
         "agree_ha": s["confidence"].get("two_track_agreement_ha", 0), "flow": s.get("flowpath"),
     }
@@ -64,7 +89,8 @@ def english(f: dict) -> str:
         f"<tr><td>{html.escape(str(r['name']))}</td><td>{r['n_buildings']}</td><td>{r['dist_before_km'] or '\u2013'} km</td>"
         f"<td>{html.escape(str(r['dest_before'] or '\u2013'))}</td></tr>" for r in f["cut"]) or \
         "<tr><td colspan=4>No settlement lost its road connection to a hospital/town in the mapped network.</td></tr>"
-    longer = "; ".join(f"{html.escape(str(r['name']))} ({r['reason']})" for r in f["longer"]) or "none"
+    top_long = "; ".join(f"{html.escape(str(r['name']))} ({r['n_buildings']} buildings, {r['reason']})" for r in f["longer"]) or "none"
+    longer = f"{f['n_longer_all']} settlements; largest: {top_long}"
     flow = ""
     if f["flow"]:
         names = ", ".join(f"{html.escape(str(r['name']))} ({r['km_along_path']} km)" for r in f["flow"]["settlements"][:10])
@@ -95,13 +121,13 @@ every few days: this describes the scene as of the post-event pass, not the situ
 def nepali(f: dict) -> str:
     """Nepali template (needs review by a native speaker before operational use)."""
     cut_rows = "".join(
-        f"<tr><td>{html.escape(str(r['name']))}</td><td>{ne(r['n_buildings'])}</td>"
-        f"<td>{ne(r['dist_before_km'] or '–')} कि.मी.</td><td>{html.escape(str(r['dest_before'] or '–'))}</td></tr>"
+        f"<tr><td>{ne_name(r['name'])}</td><td>{ne(r['n_buildings'])}</td>"
+        f"<td>{ne(r['dist_before_km'] or '–')} कि.मी.</td><td>{ne_name(r['dest_before'] or '–')}</td></tr>"
         for r in f["cut"]) or \
         "<tr><td colspan=4>नक्साङ्कित सडक सञ्जालमा अस्पताल/सहरसँगको सडक सम्पर्क गुमेको कुनै बस्ती भेटिएन।</td></tr>"
     flow = ""
     if f["flow"]:
-        names = ", ".join(f"{html.escape(str(r['name']))} ({ne(r['km_along_path'])} कि.मी.)"
+        names = ", ".join(f"{ne_name(r['name'])} ({ne(r['km_along_path'])} कि.मी.)"
                           for r in f["flow"]["settlements"][:10])
         flow = (f"<p><b>बाढी बगेको बाटो (तल्लो भागतर्फ):</b> {ne(f['flow']['length_km'])} कि.मी. पत्ता लगाइयो; "
                 f"जोखिमयुक्त करिडोरका बस्तीहरू (तलतल्तिर क्रमबद्ध): {names or 'भेटिएन'}।</p>")
@@ -168,14 +194,31 @@ def _browser() -> str | None:
 def write_all(summary: dict, out: Path, log=print):
     html_text = build_html(summary, out / "map.png")
     (out / "sitrep.html").write_text(html_text, encoding="utf-8")
+    out = Path(out).resolve()          # Edge resolves relative paths against its own cwd
+    pdf = out / "sitrep.pdf"
     b = _browser()
-    if b:
-        try:
-            subprocess.run([b, "--headless=new", "--disable-gpu", "--no-pdf-header-footer",
-                            f"--print-to-pdf={out / 'sitrep.pdf'}", (out / "sitrep.html").resolve().as_uri()],
-                           check=True, timeout=90, capture_output=True)
-            log(f"[sitrep] wrote {out / 'sitrep.pdf'}")
-        except Exception as exc:
-            log(f"[sitrep] PDF export skipped ({exc}); open sitrep.html and print to PDF")
-    else:
+    if not b:
         log("[sitrep] no Chrome/Edge found for PDF export; open sitrep.html and print to PDF")
+        return
+    import tempfile
+    if pdf.exists():
+        pdf.unlink()
+    uri = (out / "sitrep.html").resolve().as_uri()
+    # classic --headless is the reliable one for --print-to-pdf (--headless=new can exit 0 without writing)
+    for mode in ("--headless", "--headless=new"):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as prof:   # private profile: works with the browser open
+            try:
+                subprocess.run([b, mode, "--disable-gpu", "--no-sandbox", f"--user-data-dir={prof}", "--no-pdf-header-footer",
+                                f"--print-to-pdf={pdf}", uri], check=True, timeout=120, capture_output=True)
+            except Exception as exc:
+                log(f"[sitrep] PDF export attempt failed ({mode}): {exc}")
+        for _ in range(10):                      # the file can appear a moment after the process exits
+            if pdf.exists() and pdf.stat().st_size > 1000:
+                break
+            time.sleep(0.5)
+        if pdf.exists() and pdf.stat().st_size > 1000:
+            break
+    if pdf.exists() and pdf.stat().st_size > 1000:
+        log(f"[sitrep] wrote {pdf}")
+    else:
+        log("[sitrep] PDF was not produced; open sitrep.html and print to PDF")

@@ -52,7 +52,7 @@ def resample_nearest(arr: np.ndarray, src: Grid, dst: Grid) -> np.ndarray:
     return arr[np.ix_(r, c)]
 
 
-def terrain_layers(grid: Grid, hydro_res: float = 30.0, log=print) -> dict:
+def terrain_layers(grid: Grid, hydro_res: float = 30.0, log=print, chan_upa_km2: float = 5.0) -> dict:
     """DEM, slope and HAND on ``grid`` (hydrology computed once at ``hydro_res`` and cached)."""
     import hashlib
     key = hashlib.sha1(repr((grid.bbox_lonlat, grid.crs)).encode()).hexdigest()[:14]
@@ -79,7 +79,10 @@ def terrain_layers(grid: Grid, hydro_res: float = 30.0, log=print) -> dict:
     slope = resample_nearest(slope, hg, grid) if abs(grid.res - hydro_res) > 1e-6 else slope
     # NaN HAND (no DEM) -> treat as "high" so nothing is detected there
     hand = np.where(np.isfinite(hand), hand, 9999.0).astype("float32")
-    return {"dem": dem, "slope": slope, "hand": hand, "upa": upa, "d8": d8, "hydro_grid": hg, "dem_hydro": dem_h}
+    from scipy import ndimage as ndi
+    chan = np.nan_to_num(upa, nan=0.0) >= chan_upa_km2
+    chan_dist = (ndi.distance_transform_edt(~chan) * grid.res).astype("float32") if chan.any() else np.full(grid.shape, 1e6, "float32")
+    return {"chan_dist": chan_dist, "dem": dem, "slope": slope, "hand": hand, "upa": upa, "d8": d8, "hydro_grid": hg, "dem_hydro": dem_h}
 
 
 def hand_and_flow(dem: np.ndarray, grid: Grid, stream_min_km2: float = 2.0):

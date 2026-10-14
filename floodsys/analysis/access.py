@@ -14,6 +14,14 @@ from .. import config
 from ..config import AccessParams
 from ..data.grid import Grid
 
+def _nm(*vals, default="(unnamed)"):
+    """First non-empty, non-NaN string among ``vals`` (pandas NaN is truthy, so `a or b` is not enough)."""
+    for v in vals:
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    return default
+
+
 PRECISION = 7  # decimals on lon/lat used to merge shared OSM nodes into graph nodes
 
 
@@ -74,7 +82,7 @@ def settlements_from_osm(places: gpd.GeoDataFrame, buildings: gpd.GeoDataFrame, 
     rows = []
     for _, r in places.iterrows():
         x, y = to_utm.transform(r.geometry.x, r.geometry.y)
-        rows.append({"name": r.get("name") or r.get("name:en") or f"{r.get('place', 'place')} (unnamed)",
+        rows.append({"name": _nm(r.get("name"), r.get("name:en"), default=f"{r.get('place', 'place')} (unnamed)"),
                      "kind": r.get("place"), "x": x, "y": y, "source": "osm_place"})
     anchors = pd.DataFrame(rows, columns=["name", "kind", "x", "y", "source"])
     bxy = np.empty((0, 2))
@@ -85,11 +93,17 @@ def settlements_from_osm(places: gpd.GeoDataFrame, buildings: gpd.GeoDataFrame, 
             lab = DBSCAN(eps=p.cluster_eps_m, min_samples=p.cluster_min_buildings).fit_predict(bxy)
             extra = []
             atree = cKDTree(anchors[["x", "y"]].values) if len(anchors) else None
+            named = anchors[~anchors["name"].str.contains("unnamed", case=False)]
+            ntree = cKDTree(named[["x", "y"]].values) if len(named) else None
             for k in sorted(set(lab) - {-1}):
                 cx, cy = bxy[lab == k].mean(axis=0)
                 if atree is None or atree.query([cx, cy])[0] > 600:
-                    extra.append({"name": f"Unnamed settlement {len(extra) + 1}", "kind": "cluster",
-                                  "x": cx, "y": cy, "source": "building_cluster"})
+                    label = f"Unnamed settlement #{len(extra) + 1}"
+                    if ntree is not None:
+                        d, j = ntree.query([cx, cy])
+                        if d <= 3000:
+                            label += f" (near {named.iloc[j]['name']}, {d / 1000:.1f} km)"
+                    extra.append({"name": label, "kind": "cluster", "x": cx, "y": cy, "source": "building_cluster"})
             if extra:
                 anchors = pd.concat([anchors, pd.DataFrame(extra)], ignore_index=True)
     anchors["n_buildings"] = 0
@@ -131,12 +145,12 @@ def analyse_access(roads, places, health, buildings_status, grid: Grid, impact, 
     for _, r in health.iterrows():
         geom = r.geometry if r.geometry.geom_type == "Point" else r.geometry.centroid
         x, y = to_utm.transform(geom.x, geom.y)
-        kind = r.get("amenity") or r.get("healthcare")
-        dest_rows.append({"name": r.get("name") or f"{kind} (unnamed)", "kind": str(kind), "x": x, "y": y,
+        kind = _nm(r.get("amenity"), r.get("healthcare"), default="health facility")
+        dest_rows.append({"name": _nm(r.get("name"), default=f"{kind} (unnamed)"), "kind": str(kind), "x": x, "y": y,
                           "type": "health"})
     for _, r in places[places["place"].isin(config.TOWN_CLASSES)].iterrows() if len(places) else []:
         x, y = to_utm.transform(r.geometry.x, r.geometry.y)
-        dest_rows.append({"name": r.get("name") or "town", "kind": r["place"], "x": x, "y": y, "type": "town"})
+        dest_rows.append({"name": _nm(r.get("name"), default=f"{r['place']} (unnamed)"), "kind": r["place"], "x": x, "y": y, "type": "town"})
     dest = pd.DataFrame(dest_rows, columns=["name", "kind", "x", "y", "type"])
     # prefer hospitals; clinics/doctors/towns are fallbacks counted as destinations too
     dest["node"] = -1

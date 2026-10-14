@@ -1,0 +1,44 @@
+{
+  "area_km2": 3333.9,
+  "pairs": [
+    {
+      "fake_event": "2026-07-02",
+      "rel_orbit": 19,
+      "pre": "2026-06-25",
+      "post": "2026-07-07",
+      "false_flood_ha": 23.0,
+      "false_debris_ha": 1121.9,
+      "per_1000km2_ha": 343.4
+    },
+    {
+      "fake_event": "2026-07-14",
+      "rel_orbit": 19,
+      "pre": "2026-07-07",
+      "post": "2026-07-19",
+      "false_flood_ha": 38.6,
+      "false_debris_ha": 1858.6,
+      "per_1000km2_ha": 569.1
+    },
+    {
+      "fake_event": "2026-07-26",
+      "rel_orbit": 19,
+      "pre": "2026-07-19",
+      "post": "2026-07-31",
+      "false_flood_ha": 15.4,
+      "false_debris_ha": 174.0,
+      "per_1000km2_ha": 56.8
+    },
+    {
+      "fake_event": "2026-08-07",
+      "rel_orbit": 19,
+      "pre": "2026-07-31",
+      "post": "2026-08-12",
+      "false_flood_ha": 8.8,
+      "false_debris_ha": 83.1,
+      "per_1000km2_ha": 27.6
+    }
+  ],
+  "real_event": [],
+  "mean_false_alarm_ha_per_1000km2": 249.22,
+  "model": null
+}

@@ -39,8 +39,7 @@ def trace(lon: float, lat: float, terrain: dict, grid: Grid, settlements: gpd.Ge
     rr, cc = np.unravel_index(np.nanargmax(win), win.shape)
     r, c = r0 + rr, c0 + cc
     idx = r * hg.width + c
-    paths, dists = flw.path(idxs=[idx], unit="m") if _accepts_unit(flw) else flw.path(idxs=[idx])
-    path = np.asarray(paths[0])
+    path = _follow_d8(terrain["d8"], int(r), int(c))      # cell indices; metric distances are computed below
     pr, pc = np.divmod(path, hg.width)
     xs = hg.transform.c + (pc + 0.5) * hg.res
     ys = hg.transform.f - (pr + 0.5) * hg.res
@@ -69,34 +68,53 @@ def trace(lon: float, lat: float, terrain: dict, grid: Grid, settlements: gpd.Ge
     out["path_lonlat"] = pts
     out["start_snapped"] = pts[0]
 
+    # settlements / buildings inside the susceptible corridor: fast raster look-up (corridor mask dilated by 2 cells)
+    cor = ndi.binary_dilation(corridor, iterations=2)
+
+    def inside(xs_, ys_):
+        r_, c_ = hg.xy_to_rc(np.asarray(xs_), np.asarray(ys_))
+        ok = (r_ >= 0) & (r_ < hg.height) & (c_ >= 0) & (c_ < hg.width)
+        res = np.zeros(len(r_), bool)
+        res[ok] = cor[r_[ok], c_[ok]]
+        return res
+
     rows = []
     if settlements is not None and len(settlements):
-        s = settlements.to_crs(grid.crs)
-        from shapely import STRtree
-        zone = corridor_gdf.union_all() if len(corridor_gdf) else None
-        tree_pts = np.column_stack([xs, ys])
         from scipy.spatial import cKDTree
-        kd = cKDTree(tree_pts)
-        for _, rw in s.iterrows():
-            px, py = rw.geometry.x, rw.geometry.y
-            d, j = kd.query([px, py])
-            inside = bool(zone is not None and zone.buffer(50).contains(rw.geometry))
-            if inside:
-                rows.append({"name": rw["name"], "lon": float(settlements.loc[rw.name, "geometry"].x),
-                             "lat": float(settlements.loc[rw.name, "geometry"].y),
-                             "km_along_path": round(float(along[j]) / 1e3, 2), "dist_to_channel_m": round(float(d)),
-                             "n_buildings": int(rw.get("n_buildings", 0))})
+        s = settlements.to_crs(grid.crs).reset_index(drop=True)
+        px, py = s.geometry.x.values, s.geometry.y.values
+        msk = inside(px, py)
+        kd = cKDTree(np.column_stack([xs, ys]))
+        for i in np.where(msk)[0]:
+            d, j = kd.query([px[i], py[i]])
+            rows.append({"name": s.loc[i, "name"], "lon": float(settlements.iloc[i].geometry.x),
+                         "lat": float(settlements.iloc[i].geometry.y), "km_along_path": round(float(along[j]) / 1e3, 2),
+                         "dist_to_channel_m": round(float(d)), "n_buildings": int(s.loc[i].get("n_buildings", 0))})
     df = pd.DataFrame(rows).sort_values("km_along_path") if rows else pd.DataFrame(
         columns=["name", "lon", "lat", "km_along_path", "dist_to_channel_m", "n_buildings"])
     out["settlements"] = df.reset_index(drop=True)
-    if buildings is not None and len(buildings) and len(corridor_gdf):
-        b = buildings.to_crs(grid.crs)
-        zone = corridor_gdf.union_all()
-        out["buildings_in_corridor"] = int(b.geometry.centroid.within(zone).sum())
+    if buildings is not None and len(buildings):
+        cen = buildings.to_crs(grid.crs).geometry.centroid
+        out["buildings_in_corridor"] = int(inside(cen.x.values, cen.y.values).sum())
     log(f"[flowpath] traced {out['length_km']} km, {len(df)} settlements in the susceptible corridor")
     return out
 
 
-def _accepts_unit(flw) -> bool:
-    import inspect
-    return "unit" in inspect.signature(flw.path).parameters
+_D8 = {1: (0, 1), 2: (1, 1), 4: (1, 0), 8: (1, -1), 16: (0, -1), 32: (-1, -1), 64: (-1, 0), 128: (-1, 1)}
+
+
+def _follow_d8(d8: np.ndarray, r: int, c: int, max_steps: int = 200000) -> np.ndarray:
+    """Follow ESRI-style D8 codes downstream from (r, c) until a pit / the domain edge; returns flat cell indices."""
+    h, w = d8.shape
+    out = [r * w + c]
+    seen = {out[0]}
+    for _ in range(max_steps):
+        step = _D8.get(int(d8[r, c]))
+        if step is None:
+            break
+        r, c = r + step[0], c + step[1]
+        if not (0 <= r < h and 0 <= c < w) or r * w + c in seen:
+            break
+        seen.add(r * w + c)
+        out.append(r * w + c)
+    return np.asarray(out)

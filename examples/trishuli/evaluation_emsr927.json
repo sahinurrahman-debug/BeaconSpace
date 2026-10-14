@@ -1,0 +1,35 @@
+{
+  "reference": "Copernicus EMS EMSR927 (check only)",
+  "run": "trishuli",
+  "extent": {
+    "evaluated_inside_EMS_AOI_ha": 5131.8,
+    "ours_ha": 981.3,
+    "reference_ha": 1308.8,
+    "overlap_ha": 745.7,
+    "IoU": 0.483,
+    "precision": 0.76,
+    "recall": 0.57
+  },
+  "extent_with_30m_tolerance": {
+    "precision": 0.823,
+    "recall": 0.761
+  },
+  "reference_classes": {
+    "6-Mass Movement": 1308.8
+  },
+  "buildings": {
+    "reference_affected": 3816,
+    "reference_total_in_AOI": 3816,
+    "ours_affected_in_EMS_AOI": 2309,
+    "reference_found_by_us(within 20 m)": 2153,
+    "recall": 0.564,
+    "note": "our building set is OSM (pre-event); EMS maps buildings from VHR imagery, so totals differ"
+  },
+  "roads": {
+    "reference_affected_km": 74.6,
+    "ours_hit_km": 132.13,
+    "reference_covered_by_ours_km(30m)": 63.03,
+    "recall": 0.845,
+    "precision": 0.49
+  }
+}

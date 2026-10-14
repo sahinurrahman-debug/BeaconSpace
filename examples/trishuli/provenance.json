@@ -1,0 +1,152 @@
+{
+  "created": "2026-10-14T14:10:12.780434+00:00",
+  "bbox": [
+    84.93,
+    27.78,
+    85.48,
+    28.32
+  ],
+  "event_utc": "2026-08-25T22:00:00+00:00",
+  "resolution_m": 20.0,
+  "area_km2": 3333.9,
+  "python": "3.14.0",
+  "inputs_allowed": [
+    "Sentinel-1 RTC (Copernicus Sentinel data)",
+    "Sentinel-2 L2A",
+    "Copernicus DEM GLO-30",
+    "OpenStreetMap snapshot predating the event",
+    "Kuro Siwo (model training only)"
+  ],
+  "forbidden_inputs_used": [],
+  "parameters": {
+    "detect": {
+      "water_vv_db": -17.0,
+      "water_vh_db": -24.0,
+      "water_drop_db": 3.0,
+      "change_low_k": 2.5,
+      "change_high_k": 4.0,
+      "min_change_db": 2.5,
+      "max_chan_dist_m": 150.0,
+      "chan_upa_km2": 5.0,
+      "variability_gain": 1.0,
+      "max_slope_water": 12.0,
+      "max_slope_debris": 35.0,
+      "max_hand_water": 40.0,
+      "max_hand_debris": 60.0,
+      "min_area_ha": 0.3,
+      "s2_water_mndwi": 0.15,
+      "s2_ndvi_drop": 0.25,
+      "model_prob": 0.5
+    },
+    "damage": {
+      "building_buffer_m": 10.0,
+      "severe_overlap": 0.5,
+      "exposed_buffer_m": 40.0,
+      "road_min_overlap_m": 10.0,
+      "bridge_buffer_m": 25.0
+    },
+    "access": {
+      "snap_m": 400.0,
+      "detour_ratio": 1.5,
+      "cluster_eps_m": 120.0,
+      "cluster_min_buildings": 4,
+      "osm_buffer_km": 6.0
+    }
+  },
+  "sentinel2": {
+    "post_dates": [
+      "2026-08-27"
+    ],
+    "pre_dates": [
+      "2026-08-24",
+      "2026-08-14"
+    ],
+    "clear_fraction": 0.07
+  },
+  "model": {
+    "file": "flood_unet.onnx",
+    "name": "flood_unet",
+    "architecture": "U-Net / ResNet-34 encoder (segmentation-models-pytorch)",
+    "task": "3-class SAR change detection: 0 no water, 1 permanent water, 2 new flood water",
+    "input": "7 channels: post VV, post VH, pre VV, pre VH (dB, scaled), smoothed change VV/VH, slope; see floodsys/flood/model.py",
+    "training_data": "Kuro Siwo GRD (Bountos et al., NeurIPS 2024, CC BY)",
+    "trained_on": "11700 patches from 5 train shards; epochs=14",
+    "held_out_metrics": {
+      "10m": {
+        "iou": 0.7213031744506087,
+        "f1": 0.8380896348266229,
+        "precision": 0.7669839906726423,
+        "recall": 0.9237265908279879
+      },
+      "20m": {
+        "iou": 0.7076207089846559,
+        "f1": 0.8287797228758185,
+        "precision": 0.7502259255304116,
+        "recall": 0.925707660872432
+      }
+    },
+    "false_alarm_rate_flood_free": 0.026441173112254593,
+    "created": "2026-10-14",
+    "limitations": "Trained mostly on low-relief floods; debris flows are not a label class; unseen terrain may degrade."
+  },
+  "sentinel1_pairs": [
+    {
+      "rel_orbit": 85,
+      "orbit_state": "ascending",
+      "post": "2026-08-28T12:21:29.261278+00:00",
+      "pre": [
+        "2026-08-16T12:21:28.557518+00:00",
+        "2026-08-04T12:21:27.992368+00:00",
+        "2026-07-23T12:21:27.612636+00:00",
+        "2026-07-11T12:21:26.656417+00:00",
+        "2026-06-29T12:21:26.001646+00:00"
+      ],
+      "post_coverage": 0.997,
+      "pre_coverage": [
+        0.997,
+        0.997,
+        0.997,
+        0.997,
+        0.997
+      ],
+      "baseline_days": 12.0
+    },
+    {
+      "rel_orbit": 19,
+      "orbit_state": "descending",
+      "post": "2026-09-05T00:18:57.330780+00:00",
+      "pre": [
+        "2026-08-24T00:18:57.054676+00:00",
+        "2026-08-12T00:18:56.516306+00:00",
+        "2026-07-31T00:18:55.939263+00:00",
+        "2026-07-19T00:18:55.400207+00:00",
+        "2026-07-07T00:18:54.460854+00:00"
+      ],
+      "post_coverage": 1.0,
+      "pre_coverage": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "baseline_days": 12.0
+    }
+  ],
+  "osm": {
+    "snapshot": "2026-07-27",
+    "provider": {
+      "roads": "overpass-attic",
+      "places": "overpass-attic",
+      "health": "overpass-attic",
+      "buildings": "overpass-attic"
+    },
+    "features": {
+      "roads": 45706,
+      "places": 1375,
+      "health": 856,
+      "buildings": 77004
+    }
+  },
+  "summary_file": "summary.json"
+}
