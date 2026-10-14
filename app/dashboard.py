@@ -28,7 +28,12 @@ UTC = dt.timezone.utc
 OUT = config.OUTPUT_DIR
 esc = html.escape
 
-st.set_page_config(page_title="BeaconSpace", page_icon="🛰️", layout="wide", initial_sidebar_state="expanded")
+try:
+    from PIL import Image
+    _icon = Image.open(ROOT / "app" / "assets" / "favicon.png")
+except Exception:
+    _icon = "🛰️"
+st.set_page_config(page_title="BeaconSpace", page_icon=_icon, layout="wide", initial_sidebar_state="expanded")
 
 # ------------------------------------------------------------------------------------------------ design tokens
 LIGHT = dict(bg="#F5F6FA", surface="#FFFFFF", surface2="#EEF1F7", border="#D9DEE8", text="#0F172A", muted="#566178",
@@ -136,9 +141,8 @@ white-space:pre-wrap;word-break:break-word}
 """
 st.markdown(CSS % P, unsafe_allow_html=True)
 
-LOGO = ("<svg width='40' height='40' viewBox='0 0 36 36' aria-hidden='true'><circle cx='18' cy='18' r='5' fill='var(--bs-accent)'/>"
-        "<g stroke='var(--bs-accent)' stroke-width='2.4' stroke-linecap='round' opacity='.85'>"
-        "<path d='M18 3v5M18 28v5M3 18h5M28 18h5M7.4 7.4l3.5 3.5M25.1 25.1l3.5 3.5M7.4 28.6l3.5-3.5M25.1 10.9l3.5-3.5'/></g></svg>")
+LOGO = ("<svg width='46' height='46' viewBox='0 0 48 48' role='img' aria-label='BeaconSpace logo'>"
+        "<path d='M13.0 24.0A11.0 11.0 0 0 1 24.0 35.0' fill='none' stroke='var(--bs-accent)' stroke-width='3.2' stroke-linecap='round' opacity='1.0'/><path d='M13.0 16.0A19.0 19.0 0 0 1 32.0 35.0' fill='none' stroke='var(--bs-accent)' stroke-width='3.2' stroke-linecap='round' opacity='0.62'/><path d='M13.0 8.0A27.0 27.0 0 0 1 40.0 35.0' fill='none' stroke='var(--bs-accent)' stroke-width='3.2' stroke-linecap='round' opacity='0.34'/><circle cx='13.0' cy='35.0' r='5.6' fill='var(--bs-accent)'/><circle cx='32.1' cy='15.9' r='3.3' fill='var(--bs-text)'/></svg>")
 HERO = ("<svg viewBox='0 0 220 120' width='220' height='120' role='img' aria-label='Satellite scanning a mountain valley'>"
         "<path d='M0 100 L50 60 L80 82 L120 40 L170 84 L220 58 L220 120 L0 120Z' fill='var(--bs-surface2)'/>"
         "<path d='M96 120 C104 96 112 88 110 70 C108 56 116 50 120 40' stroke='var(--bs-accent)' stroke-width='3' fill='none' stroke-linecap='round'/>"

@@ -1,3 +1,5 @@
+<p align="left"><img src="app/assets/beaconspace.svg" alt="BeaconSpace logo" width="72"></p>
+
 # BeaconSpace — flood damage from space
 
 *Multimodal AI Hackathon 2026 · Track B: Mapping Flood Damage from Space*
