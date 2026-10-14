@@ -1,13 +1,14 @@
 """Static (PNG) and interactive (Leaflet/folium) maps."""
 from __future__ import annotations
 
+import html as _html
 import json
 from pathlib import Path
 
 import numpy as np
 
-STATUS_COLOR = {"cut_off": "#FF4D5E", "longer_route": "#FBBF24", "connected": "#34D399",
-                "not_assessable": "#8FA0BD", "no_road_data": "#A78BFA"}
+STATUS_COLOR = {"cut_off": "#FF4040", "longer_route": "#FBBF24", "connected": "#34D399",
+                "not_assessable": "#8FA0BD", "no_road_data": "#6B7280"}
 STATUS_LABEL = {"cut_off": "Cut off", "longer_route": "Longer route", "connected": "Connected",
                 "not_assessable": "Not assessable", "no_road_data": "No road data"}
 
@@ -75,7 +76,7 @@ def static_map(ctx: dict, path: Path):
         aff = bd[bd["status"].isin(["destroyed_likely", "affected"])]
         if len(aff):
             c = aff.geometry.centroid
-            ax.scatter(c.x, c.y, s=3, c="#ff00ff", marker="s", zorder=5, linewidths=0)
+            ax.scatter(c.x, c.y, s=3, c="#A78BFA", marker="s", zorder=5, linewidths=0)
     if s is not None and len(s):
         for k in ("longer_route", "cut_off"):
             mm = st[st["status"] == k]
@@ -100,7 +101,7 @@ def static_map(ctx: dict, path: Path):
     ax.set_xticks([]); ax.set_yticks([]); ax.set_xlabel(""); ax.set_ylabel("")
     handles = [Patch(color="#004dff", label="Flood water"), Patch(color="#ff8c00", label="Debris / scour"),
                Patch(color="#19ccdd", label="Permanent water"), Line2D([], [], color="#ff2d55", lw=2, label="Road hit"),
-               Line2D([], [], marker="s", ls="", color="#ff00ff", label="Building affected"),
+               Line2D([], [], marker="s", ls="", color="#A78BFA", label="Building affected"),
                Line2D([], [], marker="P", ls="", color="#00ff66", mec="black", label="Hospital / town")]
     for k in ("cut_off", "longer_route", "connected"):
         handles.append(Line2D([], [], marker="o", ls="", color=STATUS_COLOR[k], mec="black", label=STATUS_LABEL[k]))
@@ -138,11 +139,11 @@ def interactive_map(out: Path, summary: dict, ctx: dict, path: Path):
         if feats:
             folium.GeoJson({"type": "FeatureCollection", "features": feats}, name=label,
                            style_function=lambda _, c=col: {"color": c, "fillColor": c, "weight": 0.6, "fillOpacity": 0.65}).add_to(m)
-    for fname, label, kw in (("roads_hit.geojson", "Roads hit", {"color": "#FF4D5E", "weight": 3}),
-                             ("blocked_segments.geojson", "Blocked road segments", {"color": "#FF4D5E", "weight": 5}),
-                             ("flowpath.geojson", "Traced flood path", {"color": "#A78BFA", "weight": 4}),
+    for fname, label, kw in (("roads_hit.geojson", "Roads hit", {"color": "#FF4040", "weight": 3}),
+                             ("blocked_segments.geojson", "Blocked road segments", {"color": "#FF4040", "weight": 5}),
+                             ("flowpath.geojson", "Traced flood path", {"color": "#22D3EE", "weight": 4}),
                              ("flowpath_corridor.geojson", "Susceptible corridor (height above path)",
-                              {"color": "#A78BFA", "fillColor": "#A78BFA", "weight": 0.5, "fillOpacity": 0.2})):
+                              {"color": "#22D3EE", "fillColor": "#22D3EE", "weight": 0.5, "fillOpacity": 0.18})):
         d = load(fname)
         if d["features"]:
             folium.GeoJson(d, name=label, show=fname != "flowpath_corridor.geojson",
@@ -150,28 +151,29 @@ def interactive_map(out: Path, summary: dict, ctx: dict, path: Path):
     bd = load("buildings_affected.geojson")
     if bd["features"]:
         folium.GeoJson(bd, name="Buildings affected / exposed", show=True,
-                       style_function=lambda f: {"color": {"destroyed_likely": "#C026D3", "affected": "#E879F9",
-                                                           "exposed": "#F5D0FE"}.get(f["properties"].get("status"), "#999"),
+                       style_function=lambda f: {"color": {"destroyed_likely": "#8B5CF6", "affected": "#A78BFA",
+                                                           "exposed": "#DDD6FE"}.get(f["properties"].get("status"), "#999"),
                                                  "weight": 1, "fillOpacity": 0.8},
                        tooltip=folium.GeoJsonTooltip(fields=["status"])).add_to(m)
     br = load("bridges_hit.geojson")
     if br["features"]:
-        folium.GeoJson(br, name="Bridges hit", style_function=lambda _: {"color": "#ff00ff", "weight": 7}).add_to(m)
+        folium.GeoJson(br, name="Bridges hit", style_function=lambda _: {"color": "#A78BFA", "weight": 7}).add_to(m)
     fg = folium.FeatureGroup(name="Settlements (colour = road access)")
     fg_other = folium.FeatureGroup(name="Settlements without usable road data (off by default)", show=False)
     for s in summary["settlements"]:
         target = fg if s["status"] in ("cut_off", "longer_route", "connected") else fg_other
         col = STATUS_COLOR.get(s["status"], "#999")
-        html = (f"<b>{s['name']}</b><br>{STATUS_LABEL.get(s['status'], s['status'])}"
-                f"<br>{s['reason']}<br>Buildings: {s['n_buildings']} (affected: {s['n_buildings_affected']})"
-                f"<br>Route before: {s['dist_before_km']} km → {s['dest_before']}"
-                f"<br>Route after: {s['dist_after_km']} km → {s['dest_after']}")
+        e_ = lambda v: _html.escape(str(v))          # names come from crowd-sourced OSM: never inject them as raw HTML
+        html = (f"<b>{e_(s['name'])}</b><br>{e_(STATUS_LABEL.get(s['status'], s['status']))}"
+                f"<br>{e_(s['reason'])}<br>Buildings: {s['n_buildings']} (affected: {s['n_buildings_affected']})"
+                f"<br>Route before: {e_(s['dist_before_km'])} km → {e_(s['dest_before'])}"
+                f"<br>Route after: {e_(s['dist_after_km'])} km → {e_(s['dest_after'])}")
         folium.CircleMarker([s["lat"], s["lon"]], radius=7, color="black", weight=1, fill=True, fill_color=col,
                             fill_opacity=0.95, popup=folium.Popup(html, max_width=320),
-                            tooltip=f"{s['name']} – {STATUS_LABEL.get(s['status'], s['status'])}").add_to(target)
+                            tooltip=f"{_html.escape(str(s['name']))} – {STATUS_LABEL.get(s['status'], s['status'])}").add_to(target)
         if s.get("cut_lon") is not None and s["cut_lon"] == s["cut_lon"] and s.get("cut_lat") == s.get("cut_lat"):
             folium.Marker([s["cut_lat"], s["cut_lon"]], icon=folium.Icon(color="red", icon="remove"),
-                          tooltip=f"Road cut on route from {s['name']}").add_to(fg)
+                          tooltip=f"Road cut on route from {_html.escape(str(s['name']))}").add_to(fg)
     fg.add_to(m)
     fg_other.add_to(m)
     dest = load("destinations.geojson")
@@ -192,7 +194,7 @@ def interactive_map(out: Path, summary: dict, ctx: dict, path: Path):
            f"<div class='bs-m'>FLOOD {ev_date} · Contains modified Copernicus Sentinel data {summary['event_utc'][:4]} · © OpenStreetMap contributors · "
            f"Copernicus DEM © DLR/Airbus · educational prototype</div></div>")
     legend = ("<div class='bs-glass bs-leg'>" + "".join(f"<div><i style='background:{c}'></i>{t}</div>" for c, t in (
-        ("#3B82F6", "Flood water"), ("#FF8C00", "Debris / scour"), ("#FF4D5E", "Road hit"), ("#E879F9", "Building affected"),
+        ("#3B82F6", "Flood water"), ("#FF8C00", "Debris / scour"), ("#FF4040", "Road hit"), ("#A78BFA", "Building affected"),
         (STATUS_COLOR["cut_off"], "Critical: cut off"), (STATUS_COLOR["longer_route"], "Watch: longer route"),
         (STATUS_COLOR["connected"], "Normal: connected"))) + "</div>")
     m.get_root().html.add_child(folium.Element(hdr + legend))
@@ -217,8 +219,8 @@ def interactive_map(out: Path, summary: dict, ctx: dict, path: Path):
 
 _PANEL_CSS = """<style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
-:root{--g-bg:rgba(15,21,33,.66);--g-fg:#E6EAF2;--g-mut:#8FA0BD;--g-line:rgba(255,255,255,.10);--g-acc:#22D3EE;--g-crit:#FF4D5E}
-.bs-light{--g-bg:rgba(255,255,255,.74);--g-fg:#0B1220;--g-mut:#526079;--g-line:rgba(15,23,42,.14);--g-acc:#0E7490;--g-crit:#C81E2E}
+:root{--g-bg:rgba(24,15,28,.68);--g-fg:#F6E9F2;--g-mut:#B79AAF;--g-line:rgba(255,255,255,.10);--g-acc:#F472B6;--g-crit:#FF4040}
+.bs-light{--g-bg:rgba(255,255,255,.78);--g-fg:#2A1423;--g-mut:#6B4F62;--g-line:rgba(70,20,50,.15);--g-acc:#BE185D;--g-crit:#D31F1F}
 .bs-glass{position:fixed;z-index:9999;background:var(--g-bg);color:var(--g-fg);border:1px solid var(--g-line);border-radius:14px;
 backdrop-filter:blur(14px) saturate(1.25);-webkit-backdrop-filter:blur(14px) saturate(1.25);box-shadow:0 8px 28px rgba(0,0,0,.35);
 font:14px/1.4 Inter,system-ui,sans-serif;padding:14px 16px}

@@ -1,4 +1,4 @@
-# BeaconSpace "mission control" design system: obsidian dark-first base, frosted-glass modules (CSS), ONE accent (electric cyan),
+# BeaconSpace "mission control" design system: obsidian dark-first base, frosted-glass modules (CSS), ONE accent (nebula rose),
 # traffic-light status scale, Inter + JetBrains Mono (loaded in app/dashboard.py). Light and dark both defined; follows the system setting
 # (change under  ⋮ ▸ Settings ▸ Theme).
 [server]
@@ -16,17 +16,17 @@ headingFont = "sans-serif"
 showWidgetBorder = true
 
 [theme.light]
-primaryColor = "#0E7490"
-backgroundColor = "#F4F6FA"
+primaryColor = "#BE185D"
+backgroundColor = "#FAF4F8"
 secondaryBackgroundColor = "#FFFFFF"
-textColor = "#0B1220"
-borderColor = "#D3DAE6"
-linkColor = "#0E7490"
+textColor = "#2A1423"
+borderColor = "#E6D3DF"
+linkColor = "#BE185D"
 
 [theme.dark]
-primaryColor = "#22D3EE"
-backgroundColor = "#0B0E14"
-secondaryBackgroundColor = "#111723"
-textColor = "#E6EAF2"
-borderColor = "#222C3F"
-linkColor = "#67E8F9"
+primaryColor = "#F472B6"
+backgroundColor = "#120B14"
+secondaryBackgroundColor = "#1E1423"
+textColor = "#F6E9F2"
+borderColor = "#35223A"
+linkColor = "#F9A8D4"

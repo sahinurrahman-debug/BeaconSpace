@@ -39,13 +39,13 @@ pip install -r requirements.txt                       # Python 3.10 – 3.14
 (AWS) and OpenStreetMap history are all open endpoints.
 
 ### Dashboard (recommended)
-"Mission control" layout: the map is the central viewport (frosted-glass panels, dark basemap), a rail of status modules sits beside it (Critical / Watch / Normal access badges, coordinates in monospace) and details are in tabs below. Includes a **water-rise preview** slider (+0 to +60 m above the nearest river → area, buildings and settlements within reach; terrain-only and indicative, *not a forecast*). Dark by default design, light theme supported (follows your system; change under ⋮ ▸ Settings); designed empty and loading states and a step-by-step progress view while an analysis runs. Only real data is shown — no rainfall, gauge or drone feeds exist in this system, so none are simulated.
+"Mission control" layout with a **top navigation bar** (Overview · Settlements · Situation report · Method & data · EMS check · New analysis) and a symmetric Overview (four equal cards, full-width map, twin Critical / Watch panels): the map is the central viewport (frosted-glass panels, dark basemap), a rail of status modules sits beside it (Critical / Watch / Normal access badges, coordinates in monospace) and details are in tabs below. Includes a **water-rise preview** slider (+0 to +60 m above the nearest river → area, buildings and settlements within reach; terrain-only and indicative, *not a forecast*). Dark by default design, light theme supported (follows your system; change under ⋮ ▸ Settings); designed empty and loading states and a step-by-step progress view while an analysis runs. Only real data is shown — no rainfall, gauge or drone feeds exist in this system, so none are simulated.
 
 ```bash
 streamlit run app/dashboard.py
 ```
-Sidebar → *Run a new analysis* → choose the **Trishuli** preset (or type any bounding box + flood date) → **Run analysis**.
-Finished runs are listed under *Open a finished run*.
+Top bar → *New analysis* → choose the **Trishuli** preset (or type any bounding box + flood date) → **Run analysis**.
+Finished runs are chosen from the *Run* picker at the top of every page.
 
 ### Command line (same engine)
 

@@ -15,11 +15,11 @@ Open `examples/trishuli/`: `sitrep.pdf` (one page English + one page Nepali), `m
 ## 2 · Reproduce the case study (≈ 10 min; OpenStreetMap tiles are bundled)
 ```bash
 python -m floodsys run --preset trishuli          # Sentinel-1/2 + DEM are streamed live; OSM comes from data/osm_tiles/
-streamlit run app/dashboard.py                    # then choose "Open a finished run" → trishuli
+streamlit run app/dashboard.py                    # then the **Overview** page opens the finished Trishuli run
 ```
 
 ## 3 · Your own area and date (the live evaluation)
-Dashboard: sidebar → **Run a new analysis** → type a bounding box + flood date → **Run analysis**. Or:
+Dashboard: top bar → **New analysis** → type a bounding box + flood date → **Run analysis**. Or:
 ```bash
 python -m floodsys run --bbox 85.50 27.80 85.66 28.00 --event 2021-06-14T21:00 --name my_test
 ```
@@ -35,7 +35,7 @@ on the public server — a first run of a new area can take longer; repeats are 
 |---|---|
 | Where did the flood hit? | map layers *Flood water*, *Debris / scour*; `classes.tif`, `support.tif` (agreement of orbit tracks) |
 | What was damaged? | *Buildings affected*, *Roads hit*, *Bridges hit*; counts in `summary.json` |
-| Who is cut off? | tab **Who is cut off**; red markers = cut-off settlements, with the place where the road is blocked |
+| Who is cut off? | page **Settlements** (and the Critical / Watch panels on **Overview**); red markers = cut-off settlements, with the place where the road is blocked |
 | AI component | `models/flood_unet.onnx` + card; report §4 (honest held-out numbers); ablation in §5 |
 | Data rules | `provenance.json` → `forbidden_inputs_used: []`; EMS data only in `scripts/evaluate_emsr927.py` |
 | Honesty about limits | report §7, README §5 |
