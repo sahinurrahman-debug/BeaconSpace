@@ -57,21 +57,22 @@ def theme_type() -> str:
         t = st.context.theme.type
     except Exception:
         t = None
-    return t if t in ("light", "dark") else "dark"
+    return t if t in ("light", "dark") else None
 
 
-THEME = theme_type()
+KNOWN = theme_type()                       # None until the browser has reported its theme (first paint): CSS media queries cover that gap
+THEME = KNOWN or "dark"
 P = LIGHT if THEME == "light" else DARK
 
 CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 :root{--bs-bg:%(bg)s;--bs-surface:%(surface)s;--bs-solid:%(surface_solid)s;--bs-surface2:%(surface2)s;--bs-border:%(border)s;--bs-text:%(text)s;
---bs-muted:%(muted)s;--bs-accent:%(accent)s;--bs-accent-soft:%(accent_soft)s;--bs-on-accent:%(on_accent)s;--bs-shadow:%(shadow)s;
+--bs-muted:%(muted)s;--bs-accent:%(accent)s;--bs-accent-soft:%(accent_soft)s;--bs-on-accent:%(on_accent)s;--bs-shadow:%(shadow)s;--bs-glow:%(glow)s;
 --bs-crit:%(cut_off)s;--bs-watch:%(longer_route)s;--bs-ok:%(connected)s;--bs-blue:%(blue)s;
 --bs-font:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;--bs-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Consolas,monospace}
 html,body,.stApp,.stApp button,.stApp input,.stApp textarea,.stApp [data-baseweb],.stMarkdown,.stApp p,.stApp label,.stApp a{font-family:var(--bs-font)!important}
-.stApp{background:%(glow)s,var(--bs-bg)!important}
+.stApp{background:var(--bs-glow),var(--bs-bg)!important}
 .stApp,.stApp p,.stApp li,.stApp label,.stApp [data-testid="stWidgetLabel"] p{font-size:16px}
 h1,h2,h3,.bs-head{font-family:var(--bs-font)!important;letter-spacing:-.015em;font-weight:700}
 .bs-mono{font-family:var(--bs-mono)!important}
@@ -81,7 +82,7 @@ h1,h2,h3,.bs-head{font-family:var(--bs-font)!important;letter-spacing:-.015em;fo
 :focus-visible{outline:2px solid var(--bs-accent);outline-offset:2px;border-radius:6px}
 
 /* ---- navbar (Streamlit top navigation) ---- */
-header[data-testid="stHeader"]{background:%(surface)s!important;backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2);
+header[data-testid="stHeader"]{background:var(--bs-surface)!important;backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2);
 border-bottom:1px solid var(--bs-border);height:64px}
 header[data-testid="stHeader"] nav,header[data-testid="stHeader"] [data-testid="stTopNavLinkContainer"]{gap:4px;justify-content:center}
 header[data-testid="stHeader"] a,header[data-testid="stHeader"] button{font-size:16px!important;font-weight:600!important;border-radius:10px!important;
@@ -164,7 +165,17 @@ color:var(--bs-muted);padding:14px 16px;border-bottom:1px solid var(--bs-border)
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition:none!important}}
 </style>
 """
-st.markdown(CSS % P, unsafe_allow_html=True)
+
+
+def token_css(p: dict) -> str:
+    return (f"--bs-bg:{p['bg']};--bs-surface:{p['surface']};--bs-solid:{p['surface_solid']};--bs-surface2:{p['surface2']};--bs-border:{p['border']};"
+            f"--bs-text:{p['text']};--bs-muted:{p['muted']};--bs-accent:{p['accent']};--bs-accent-soft:{p['accent_soft']};--bs-on-accent:{p['on_accent']};"
+            f"--bs-shadow:{p['shadow']};--bs-glow:{p['glow']};--bs-crit:{p['cut_off']};--bs-watch:{p['longer_route']};--bs-ok:{p['connected']};--bs-blue:{p['blue']}")
+
+
+# Until the browser reports its theme (first paint) the system preference decides in CSS, so there is no dark-to-light flash or rerun lag.
+_early = "" if KNOWN else f"<style>@media (prefers-color-scheme: light){{:root{{{token_css(LIGHT)}}}}}</style>"
+st.markdown(CSS % P + _early, unsafe_allow_html=True)
 
 LOGO = ("<svg width='44' height='44' viewBox='0 0 48 48' role='img' aria-label='BeaconSpace logo'>"
         "<path d='M13.0 24.0A11.0 11.0 0 0 1 24.0 35.0' fill='none' stroke='var(--bs-accent)' stroke-width='3.2' stroke-linecap='round' opacity='1.0'/>"
@@ -239,19 +250,23 @@ def embed_html(text: str, height: int):
 
 
 def themed_map(text: str) -> str:
-    light = THEME == "light"
-    bg, fg, br = (P["bg"], P["text"], "rgba(128,128,128,.35)")
-    css = (f"<style>#bs-load{{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;"
-           f"gap:16px;background:{bg};color:{fg};font:16px Inter,system-ui,sans-serif;transition:opacity .25s}}"
-           f"#bs-load .sp{{width:32px;height:32px;border-radius:50%;border:3px solid {br};border-top-color:{P['accent']};animation:r .8s linear infinite}}"
+    # The map iframe decides light/dark by itself (explicit when the app knows its theme, otherwise the system preference), so it never flips late.
+    known = "null" if KNOWN is None else ("true" if KNOWN == "light" else "false")
+    css = ("<style>:root{--l-bg:%s;--l-fg:%s;--l-ac:%s}@media (prefers-color-scheme:light){:root{--l-bg:%s;--l-fg:%s;--l-ac:%s}}"
+           "#bs-load{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;"
+           "background:var(--l-bg);color:var(--l-fg);font:16px Inter,system-ui,sans-serif;transition:opacity .2s}"
+           "#bs-load .sp{width:32px;height:32px;border-radius:50%%;border:3px solid rgba(128,128,128,.35);border-top-color:var(--l-ac);animation:r .8s linear infinite}"
            "@keyframes r{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){#bs-load .sp{animation:none}}"
-           "</style><div id='bs-load' role='status'><div class='sp'></div><div>Loading map…</div></div>")
+           "</style><div id='bs-load' role='status'><div class='sp'></div><div>Loading map…</div></div>"
+           % ((DARK["bg"], DARK["text"], DARK["accent"], LIGHT["bg"], LIGHT["text"], LIGHT["accent"]) if KNOWN is None else
+              (P["bg"], P["text"], P["accent"]) * 2))
+    pre = (f"<script>var K={known};var LIGHT=K===null?window.matchMedia('(prefers-color-scheme: light)').matches:K;"
+           "if(LIGHT)document.body.classList.add('bs-light')</script>")
     js = ("<script>window.addEventListener('load',function(){setTimeout(function(){var l=document.getElementById('bs-load');"
-          "if(l){l.style.opacity=0;setTimeout(function(){l.remove()},280)}"
-          f"var want='{'light' if light else 'dark'}';document.querySelectorAll('.leaflet-control-layers-base label').forEach(function(lb){{"
-          "if(lb.textContent.toLowerCase().indexOf(want)>-1){var i=lb.querySelector('input');if(i&&!i.checked){i.click()}}})},400)})</script>")
-    body = "<body class='bs-light'>" if light else "<body>"
-    text = text.replace("<body>", body + css, 1) if "<body>" in text else css + text
+          "if(l){l.style.opacity=0;setTimeout(function(){l.remove()},220)}},60);"
+          "var want=LIGHT?'light':'dark';document.querySelectorAll('.leaflet-control-layers-base label').forEach(function(lb){"
+          "if(lb.textContent.toLowerCase().indexOf(want)>-1){var i=lb.querySelector('input');if(i&&!i.checked){i.click()}}})})</script>")
+    text = text.replace("<body>", "<body>" + css + pre, 1) if "<body>" in text else css + pre + text
     return text.replace("</body>", js + "</body>", 1)
 
 
@@ -291,7 +306,7 @@ def page_overview():
                 + card("Flooded / debris", f"{F['impact_ha']:,.0f}", f"{F['flood_ha']:,.0f} ha water · {F['debris_ha']:,.0f} ha debris", 1, unit="ha")
                 + card("Buildings affected", f"{F['b_aff']:,}", f"of {F['b_total']:,} mapped · {F['b_severe']:,} likely destroyed", 2)
                 + card("Road hit", f"{F['road_hit_km']:,.0f}", f"{F['br_hit']} of {F['br_total']} bridges hit", 3, unit="km")
-                + card("Cut off", f"{F['n_cut']}", f"{F['n_long']} with a much longer route · {F['b_cut']:,} buildings", 4, dot=P["cut_off"])
+                + card("Cut off", f"{F['n_cut']}", f"{F['n_long']} with a much longer route · {F['b_cut']:,} buildings", 4, dot="var(--bs-crit)")
                 + "</div>", unsafe_allow_html=True)
     mp = rd / "dashboard_map.html"
     if mp.exists():
