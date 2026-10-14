@@ -176,7 +176,7 @@ def interactive_map(out: Path, summary: dict, ctx: dict, path: Path):
     folium.LayerControl(collapsed=False).add_to(m)
     title = (f"<div style='position:fixed;top:10px;left:50px;z-index:9999;background:white;padding:6px 10px;"
              f"border-radius:6px;font:13px sans-serif;box-shadow:0 1px 4px #0004'>"
-             f"<b>Flood impact – {summary['name']}</b><br>"
+             f"<b>BeaconSpace · flood impact – {summary['name']}</b><br>"
              f"Impacted: {summary['area_ha']['impact_total_ha']} ha &middot; cut-off settlements: {summary['access'].get('cut_off', 0)}"
              f"<br><span style='font-size:10px;color:#555'>Contains modified Copernicus Sentinel data {summary['event_utc'][:4]} &middot; "
              f"© OpenStreetMap contributors &middot; Copernicus DEM © DLR/Airbus. Educational prototype.</span></div>")

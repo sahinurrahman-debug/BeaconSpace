@@ -1,4 +1,4 @@
-# Training the flood-segmentation model on Google Colab (free T4 GPU)
+# BeaconSpace — training the flood-segmentation model on Google Colab (free T4 GPU)
 
 Total time: **≈ 1.5–2.5 h** (mostly streaming data). Cost: free. Nothing here needs a Kuro Siwo download to your PC.
 

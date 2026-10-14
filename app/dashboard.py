@@ -18,14 +18,14 @@ from floodsys import config  # noqa: E402
 from floodsys.presets import PRESETS  # noqa: E402
 from floodsys.report.sitrep import facts  # noqa: E402
 
-st.set_page_config(page_title="Flood damage from space", layout="wide", page_icon="🛰️")
+st.set_page_config(page_title="BeaconSpace", layout="wide", page_icon="🛰️")
 UTC = dt.timezone.utc
 OUT = config.OUTPUT_DIR
 
 st.markdown("""<style>.block-container{padding-top:1.2rem} [data-testid=stMetricValue]{font-size:1.6rem}</style>""",
             unsafe_allow_html=True)
-st.title("🛰️ Mapping flood damage from space")
-st.caption("Where did the flood hit?  What was damaged?  Who is cut off?  — Sentinel-1/2 + Copernicus DEM + pre-event OpenStreetMap. "
+st.title("🛰️ BeaconSpace")
+st.caption("Mapping flood damage from space · Where did the flood hit?  What was damaged?  Who is cut off?  — Sentinel-1/2 + Copernicus DEM + pre-event OpenStreetMap. "
            + config.DISCLAIMER)
 
 runs = sorted([p for p in OUT.glob("*/summary.json")], key=lambda p: p.stat().st_mtime, reverse=True) if OUT.exists() else []

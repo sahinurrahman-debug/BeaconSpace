@@ -1,7 +1,7 @@
 # Render blueprint (optional): New + > Blueprint > pick this repo.
 services:
   - type: web
-    name: flood-damage-from-space
+    name: beaconspace
     runtime: docker
     plan: free            # fine for viewing finished runs; analyses need a paid plan with several GB RAM
     healthCheckPath: /_stcore/health

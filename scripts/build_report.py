@@ -131,8 +131,8 @@ DIAGRAM = """
 <path d='M112 24L150 50M112 62L150 59M112 97L150 72M300 59L340 24M300 59L340 61M300 59L340 97M460 24L500 50M460 61L500 59M460 97L500 70M625 59L660 59' stroke='#555' fill='none' marker-end='url(#a)'/></g></svg>"""
 
 BODY = f"""
-<h1>Mapping flood damage from space — Trishuli / Bhote Koshi, 26 Aug 2026</h1>
-<div class=sub>Multimodal AI Hackathon 2026 · Track B · AI component: flood-segmentation model · Educational prototype, not an operational tool.</div>
+<h1>BeaconSpace — mapping flood damage from space</h1>
+<div class=sub>Case study: Trishuli / Bhote Koshi, 26 Aug 2026 · Multimodal AI Hackathon 2026 · Track B · AI component: flood-segmentation model · Educational prototype, not an operational tool.</div>
 
 <h2>1 · What the system does</h2>
 <p>Given a bounding box and a flood date, the system downloads Sentinel-1/2, the Copernicus DEM and a pre-event OpenStreetMap snapshot,
@@ -229,7 +229,7 @@ a provenance file. It runs from raw data for any area/date: <code>python -m floo
 
 
 def main():
-    page = f"<!doctype html><html lang=en><head><meta charset=utf-8><title>Report</title><style>{CSS}</style></head><body>{BODY}</body></html>"
+    page = f"<!doctype html><html lang=en><head><meta charset=utf-8><title>BeaconSpace — report</title><style>{CSS}</style></head><body>{BODY}</body></html>"
     out = ROOT / "docs"
     (out / "Report.html").write_text(page, encoding="utf-8")
     pdf = (out / "Report.pdf").resolve()

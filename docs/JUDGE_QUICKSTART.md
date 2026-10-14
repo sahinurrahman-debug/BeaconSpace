@@ -1,9 +1,9 @@
-# Judge quick-start (≈ 5 minutes to a first result)
+# BeaconSpace — judge quick-start (≈ 5 minutes to a first result)
 
 **Nothing needs an account or API key.** Python 3.10–3.14.
 
 ```bash
-git clone <repo> && cd <repo>
+git clone https://github.com/sahinurrahman-debug/BeaconSpace.git && cd BeaconSpace
 python -m venv .venv && . .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 pytest -q                                          # 8 offline tests, ~10 s

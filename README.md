@@ -1,8 +1,10 @@
-# Flood damage from space — Multimodal AI Hackathon 2026, Track B
+# BeaconSpace — flood damage from space
+
+*Multimodal AI Hackathon 2026 · Track B: Mapping Flood Damage from Space*
 
 > *When roads, bridges and phone lines are gone, rescuers still need to know where the damage is and who is cut off.*
 
-Give the system **an area and a flood date**. From free satellite data only, it answers three questions:
+Give BeaconSpace **an area and a flood date**. From free satellite data only, it answers three questions:
 
 | Question | How |
 |---|---|
@@ -19,12 +21,14 @@ inputs were used.
 
 *Educational prototype — not an operational tool. Contains no images of victims.*
 
+> The Python package is called `floodsys` (commands below use `python -m floodsys …`); **BeaconSpace** is the project name.
+
 ---
 
 ## 1. Run it (5 minutes + data download)
 
 ```bash
-git clone <this repo> && cd <this repo>
+git clone https://github.com/sahinurrahman-debug/BeaconSpace.git && cd BeaconSpace
 python -m venv .venv && . .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt                       # Python 3.10 – 3.14
 ```

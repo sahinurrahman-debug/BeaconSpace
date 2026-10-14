@@ -1,4 +1,4 @@
-# Q&A preparation — honest answers (for the team, not for submission)
+# BeaconSpace — Q&A preparation — honest answers (for the team, not for submission)
 
 Answer plainly; judges score "understanding in Q&A and honesty about limitations" (15 %). Numbers below are from `docs/results/` — re-check against your final run before the day.
 

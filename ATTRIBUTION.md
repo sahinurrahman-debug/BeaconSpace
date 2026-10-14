@@ -1,4 +1,4 @@
-# Data attributions and citations (required in every submission)
+# BeaconSpace — data attributions and citations (required in every submission)
 
 > Contains modified Copernicus Sentinel data 2026.
 
