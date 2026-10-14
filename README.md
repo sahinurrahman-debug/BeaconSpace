@@ -37,6 +37,7 @@ pip install -r requirements.txt                       # Python 3.10 – 3.14
 (AWS) and OpenStreetMap history are all open endpoints.
 
 ### Dashboard (recommended)
+Light and dark themes (follows your system; change under ⋮ ▸ Settings), designed empty and loading states, and a step-by-step progress view while an analysis runs.
 
 ```bash
 streamlit run app/dashboard.py

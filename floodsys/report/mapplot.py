@@ -119,7 +119,13 @@ def interactive_map(out: Path, summary: dict, ctx: dict, path: Path):
 
     l0, b0, l1, b1 = ctx["bbox"]
     m = folium.Map(location=[(b0 + b1) / 2, (l0 + l1) / 2], zoom_start=11, tiles=None, control_scale=True)
-    folium.TileLayer("Esri.WorldTopoMap", name="Basemap: topographic (display only)").add_to(m)
+    _esri = "https://server.arcgisonline.com/ArcGIS/rest/services/{}/MapServer/tile/{{z}}/{{y}}/{{x}}"
+    _attr = "Tiles &copy; Esri &mdash; display only"
+    folium.TileLayer(_esri.format("Canvas/World_Light_Gray_Base"), attr=_attr, name="Basemap: light (display only)",
+                     max_native_zoom=16, max_zoom=18).add_to(m)
+    folium.TileLayer(_esri.format("Canvas/World_Dark_Gray_Base"), attr=_attr, name="Basemap: dark (display only)",
+                     show=False, max_native_zoom=16, max_zoom=18).add_to(m)
+    folium.TileLayer("Esri.WorldTopoMap", name="Basemap: topographic (display only)", show=False).add_to(m)
     folium.TileLayer("Esri.WorldImagery", name="Basemap: imagery (display only)", show=False).add_to(m)
 
     def load(name):
@@ -173,13 +179,14 @@ def interactive_map(out: Path, summary: dict, ctx: dict, path: Path):
         folium.GeoJson(dest, name="Hospitals / towns (route targets)",
                        marker=folium.Marker(icon=folium.Icon(color="green", icon="plus")),
                        tooltip=folium.GeoJsonTooltip(fields=["name"])).add_to(m)
-    folium.LayerControl(collapsed=False).add_to(m)
-    title = (f"<div style='position:fixed;top:10px;left:50px;z-index:9999;background:white;padding:6px 10px;"
-             f"border-radius:6px;font:13px sans-serif;box-shadow:0 1px 4px #0004'>"
-             f"<b>BeaconSpace · flood impact – {summary['name']}</b><br>"
+    folium.LayerControl(collapsed=True).add_to(m)
+    title = (f"<style>.bs-title{{position:fixed;top:12px;left:56px;z-index:9999;background:#fff;color:#0f172a;padding:10px 14px;"
+             f"border-radius:12px;font:16px/1.4 Inter,system-ui,sans-serif;box-shadow:0 2px 12px #0003;max-width:min(520px,70vw)}}"
+             f".bs-title small{{display:block;font-size:13px;opacity:.75;margin-top:2px}}</style>"
+             f"<div class='bs-title'><b>BeaconSpace · flood impact – {summary['name']}</b><br>"
              f"Impacted: {summary['area_ha']['impact_total_ha']} ha &middot; cut-off settlements: {summary['access'].get('cut_off', 0)}"
-             f"<br><span style='font-size:10px;color:#555'>Contains modified Copernicus Sentinel data {summary['event_utc'][:4]} &middot; "
-             f"© OpenStreetMap contributors &middot; Copernicus DEM © DLR/Airbus. Educational prototype.</span></div>")
+             f"<small>Contains modified Copernicus Sentinel data {summary['event_utc'][:4]} &middot; "
+             f"© OpenStreetMap contributors &middot; Copernicus DEM © DLR/Airbus. Educational prototype.</small></div>")
     m.get_root().html.add_child(folium.Element(title))
     m.fit_bounds([[b0, l0], [b1, l1]])
     m.save(path)

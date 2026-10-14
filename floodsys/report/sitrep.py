@@ -152,7 +152,8 @@ def nepali(f: dict) -> str:
 
 CSS = """
 @page { size: A4; margin: 10mm }
-body{font:10.5px/1.4 'Segoe UI','Nirmala UI',Arial,sans-serif;color:#1b1b1b;margin:0}
+html{background:#fff;color-scheme:light}
+body{background:#fff;font:10.5px/1.4 'Segoe UI','Nirmala UI',Arial,sans-serif;color:#1b1b1b;margin:0}
 .page{max-width:190mm;margin:auto}
 h2{font-size:15px;margin:2px 0 3px} h3{font-size:11.5px;margin:7px 0 3px;border-bottom:1px solid #ccc}
 .meta{color:#555;font-size:9px;margin:2px 0 6px}
@@ -175,7 +176,7 @@ def build_html(summary: dict, map_png: Path | None) -> str:
     foot = ("<div class=foot>" + " ".join(html.escape(a) for a in config.attribution(int(summary["event_utc"][:4]))) +
             f" OSM snapshot: {f['osm']['snapshot']} (pre-event). Generated automatically by BeaconSpace from its maps; no value is "
             f"produced by a language model. {html.escape(config.DISCLAIMER)}</div>")
-    return (f"<!doctype html><html lang=en><head><meta charset=utf-8><title>BeaconSpace — situation report</title><style>{CSS}</style></head>"
+    return (f"<!doctype html><html lang=en><head><meta charset=utf-8><meta name='color-scheme' content='light'><title>BeaconSpace — situation report</title><style>{CSS}</style></head>"
             f"<body><div class=page>{english(f)}{img}<div class=disc>{html.escape(config.DISCLAIMER)}</div>{foot}"
             f"</div><div class='page ne'>{nepali(f)}{img}{foot}</div></body></html>")
 

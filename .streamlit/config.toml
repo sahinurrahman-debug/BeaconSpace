@@ -1,0 +1,31 @@
+# BeaconSpace design system: one accent (beacon amber), neutral surfaces, two fonts (Inter + Space Grotesk, loaded in app/dashboard.py).
+# Light and dark themes are both defined; the app follows the system setting (change it under  ⋮ ▸ Settings ▸ Theme).
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+baseFontSize = 16
+baseRadius = "0.75rem"
+buttonRadius = "0.75rem"
+font = "sans-serif"
+headingFont = "sans-serif"
+showWidgetBorder = true
+
+[theme.light]
+primaryColor = "#B45309"
+backgroundColor = "#F5F6FA"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#0F172A"
+borderColor = "#D9DEE8"
+linkColor = "#9A4507"
+
+[theme.dark]
+primaryColor = "#F5A524"
+backgroundColor = "#0B1220"
+secondaryBackgroundColor = "#131C2E"
+textColor = "#E8ECF4"
+borderColor = "#26324A"
+linkColor = "#FFC15E"

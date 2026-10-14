@@ -107,7 +107,8 @@ s2c = S["s2"]["clear_fraction"] if S.get("s2") else None
 
 CSS = """
 @page{size:A4;margin:11mm 12mm}
-body{font:10.6px/1.42 'Segoe UI',Arial,sans-serif;color:#1b1b1b;margin:0}
+html{background:#fff;color-scheme:light}
+body{background:#fff;font:10.6px/1.42 'Segoe UI',Arial,sans-serif;color:#1b1b1b;margin:0}
 h1{font-size:19px;margin:0 0 2px} h2{font-size:13px;margin:9px 0 3px;color:#0b3d91;border-bottom:1px solid #c9d3e6;padding-bottom:1px}
 h3{font-size:11px;margin:5px 0 2px} p{margin:2.5px 0} .sub{color:#555;font-size:9.4px}
 table{border-collapse:collapse;width:100%;font-size:9.4px;margin:3px 0} th,td{border:1px solid #d5dbe6;padding:1.5px 4px;text-align:left} th{background:#eef1f7}

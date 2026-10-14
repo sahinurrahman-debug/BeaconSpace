@@ -6,7 +6,7 @@
 git clone https://github.com/sahinurrahman-debug/BeaconSpace.git && cd BeaconSpace
 python -m venv .venv && . .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-pytest -q                                          # 8 offline tests, ~10 s
+pytest -q                                          # 8 offline tests (+4 dashboard tests that need a finished run), ~30 s
 ```
 
 ## 1 · See finished results immediately (no download)
