@@ -164,3 +164,18 @@ def test_debris_must_hug_the_drainage_network():
         db2[k][150:170, 30:120] += 7                           # field-like change far from any river
     r = detect.detect(db2, slope, np.full(slope.shape, 3.0, "float32"), 20.0, DetectParams(), chan_dist=cd)["cls"]
     assert not (r[150:170, 30:120] == detect.DEBRIS).any()
+
+
+def test_source_guard_refuses_reference_maps_and_unknown_hosts():
+    import pytest
+    from floodsys import sources
+    sources.reset()
+    sources.check("https://planetarycomputer.microsoft.com/api/stac/v1")
+    sources.check("/vsicurl/https://sentinel-cogs.s3.us-west-2.amazonaws.com/x.tif")
+    sources.check("s3://copernicus-dem-30m/tile.tif")
+    sources.check("C:/cache/local.tif")                                     # local cache is not a new source
+    assert "planetarycomputer.microsoft.com" in sources.used()
+    for bad in ("https://mapping.emergency.copernicus.eu/EMSR927.zip", "https://example.com/flood.tif",
+                "data/reference/emsr927/obs.json", "https://unosat.org/x"):
+        with pytest.raises(PermissionError):
+            sources.check(bad)

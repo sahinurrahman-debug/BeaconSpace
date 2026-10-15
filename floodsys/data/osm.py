@@ -19,7 +19,7 @@ import pandas as pd
 import requests
 from shapely.geometry import LineString, Point, Polygon, shape
 
-from .. import config
+from .. import config, sources
 
 UA = {"User-Agent": "BeaconSpace/0.1 (flood mapping)"}
 # Only mirrors that really support attic ([date:]) queries; others silently return *current* data.
@@ -29,7 +29,7 @@ OVERPASS = ["https://overpass-api.de/api/interpreter"]
 def latest_snapshot(event_date: dt.date) -> dt.date:
     """Latest available snapshot strictly before the event day."""
     try:
-        meta = requests.get(f"{config.OHSOME}/metadata", timeout=30, headers=UA).json()
+        meta = requests.get(sources.check(f"{config.OHSOME}/metadata"), timeout=30, headers=UA).json()
         latest = dt.datetime.fromisoformat(
             meta["extractRegion"]["temporalExtent"]["toTimestamp"].replace("Z", "+00:00")).date()
     except Exception:
@@ -70,7 +70,7 @@ def _ohsome_fetch(bbox, snapshot, layer, retries=2):
         data = {"bboxes": ",".join(f"{v:.6f}" for v in tile), "time": snapshot.isoformat(),
                 "filter": OHSOME_FILTERS[layer], "properties": "tags"}
         for attempt in range(retries):
-            r = requests.post(f"{config.OHSOME}/elements/geometry", data=data, timeout=180, headers=UA)
+            r = requests.post(sources.check(f"{config.OHSOME}/elements/geometry"), data=data, timeout=180, headers=UA)
             if r.status_code == 200:
                 feats.extend(r.json().get("features", []))
                 break
@@ -139,7 +139,7 @@ def _overpass_fetch(bbox, snapshot, layer, log=print, region=None):
         q = _overpass_ql(layer, tile, snapshot).replace("[timeout:60]", "[timeout:240]")
         for attempt in range(3):
             try:
-                r = requests.post(OVERPASS[0], data={"data": q}, timeout=260, headers=UA)
+                r = requests.post(sources.check(OVERPASS[0]), data={"data": q}, timeout=260, headers=UA)
                 if r.status_code == 200:
                     els = r.json().get("elements", [])
                     tf.write_text(json.dumps(els), encoding="utf-8")

@@ -43,10 +43,10 @@ Case study: the 26 August 2026 Bhote Koshi–Trishuli glacial-lake outburst floo
 | Flooded + debris | **1 364 ha** (61 ha water, 1 303 ha debris/scour) |
 | Buildings | **2 610** affected of 74 869 mapped (1 984 likely destroyed) |
 | Roads / bridges | **67 km** hit · **33 / 151** bridges |
-| Cut off | **126** settlements (164 with a much longer route; 7 641 buildings in cut-off settlements) |
+| Cut off | **126** settlements (164 with a much longer route; 7 641 buildings in cut-off settlements); **range 74–153** depending on how strictly a road counts as blocked ([sensitivity](./docs/results/access_sensitivity_trishuli.json)): 74 if only pixels flagged by *both* radar tracks count, 123 / 153 with a tighter / wider blocking rule |
 | Flow path | 90 km traced, 54 settlements in the corridor |
 
-**Check against Copernicus EMS EMSR927** (inside its four mapped areas, 5 132 ha; checking only): IoU 0.48 · precision 0.76 · recall 0.57 (with 30 m tolerance 0.82 / 0.76) · 56 % of EMS-affected buildings found · 85 % of EMS-affected road length covered.
+**Check against Copernicus EMS EMSR927** (inside its four mapped areas, 5 132 ha; checking only): IoU 0.48 (95 % CI 0.42–0.54) · precision 0.76 · recall 0.57 (with 30 m tolerance 0.82 / 0.76) · 56 % of EMS-affected buildings found · 85 % of EMS-affected road length covered.
 
 **False-alarm test** (same pipeline on pairs where nothing happened): the first detector flagged 670–2 620 ha of "debris"; the final one flags 42–71 ha on late-season pairs versus 880–990 ha for the real event. Early-July pairs stay noisy because their pre-event series ends before the monsoon.
 
@@ -87,7 +87,7 @@ area + flood date
  │     ├─ road graph before vs after          → cut_off / longer_route / connected
  │     └─ flow path + water-rise preview
  └─ outputs: summary.json · GeoTIFF/GeoJSON · map · EN+NE situation report · provenance.json
-                                     └─ Streamlit dashboard (top navigation, Leaflet map)
+                                     └─ React dashboard + FastAPI server (top navigation, Leaflet map)
 ```
 
 Data flow: the pipeline plans radar pairs, reads the clipped COGs in parallel, detects water and debris, overlays the pre-event OSM snapshot, rebuilds the road graph with the blocked segments removed, and writes plain files. The dashboard only reads those files (or triggers a run). See [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
@@ -98,15 +98,16 @@ Data flow: the pipeline plans radar pairs, reads the clipped COGs in parallel, d
 
 | Layer | Technology | Why |
 |---|---|---|
-| Language | Python 3.10–3.14 | Geospatial and ML ecosystem |
+| Language | Python 3.12+ (tested on 3.14) | Geospatial and ML ecosystem |
 | Satellite access | Planetary Computer STAC (Sentinel-1 RTC), AWS Earth Search (Sentinel-2, DEM), rasterio | Open, no accounts, cloud-optimised reads |
 | Geo processing | NumPy, SciPy, scikit-image, GeoPandas/Shapely, pyflwdir, NetworkX | Change detection, overlay, hydrology, road graph |
 | AI | PyTorch + segmentation-models-pytorch (Colab T4), ONNX Runtime | Train on GPU, run on any CPU |
 | Training data | Kuro Siwo (Bountos et al., NeurIPS 2024) | Pre/post SAR pairs with flood labels |
 | Map data | OpenStreetMap via ohsome / Overpass attic | Pre-event snapshot only |
-| UI | Streamlit (top navigation), Leaflet via Folium, Inter + JetBrains Mono | Fast to build, themeable, testable |
+| UI | React 18 + Vite (top navigation), Leaflet via Folium, Inter + JetBrains Mono | Instant page switches, themeable, static build |
+| Server | FastAPI + Uvicorn | Thin JSON API over the pipeline; serves the built front end |
 | Reports | HTML templates → PDF (headless Edge/Chrome) | Numbers only from the maps |
-| Tests | pytest, Streamlit AppTest | 16 tests, offline and synthetic |
+| Tests | pytest, FastAPI TestClient | 20 tests, offline and synthetic |
 | Deployment | Local, or container (`Dockerfile`, optional `render.yaml`) | No server state needed |
 
 ---
@@ -152,17 +153,106 @@ Full schema: [`docs/API_SPEC.md`](./docs/API_SPEC.md).
 
 ## Getting Started
 
+### Prerequisites
+
+| Need | Version / detail | Why |
+|---|---|---|
+| Python | 3.12 or newer (developed and tested on **3.14**) | analysis pipeline and web server |
+| Node.js + npm | Node 18 or newer (tested on 24) | builds the React front end (only needed once) |
+| Git | any recent version | clone the repository |
+| Internet | required for the first run of an area | Sentinel, elevation and OpenStreetMap data are streamed; repeats use the cache |
+| Disk / memory | about 3 GB free for the cache of the case study; 8 GB RAM recommended for a 20 m run of the full case-study area | cached rasters and OSM tiles |
+| Edge or Chrome | optional | PDF export of the situation report (without it you still get the HTML report) |
+| Accounts / API keys | **none** | all data sources are open |
+
+Python dependencies are pinned in [`requirements.txt`](./requirements.txt): numpy, scipy, pandas, shapely, pyproj, rasterio, geopandas, pyogrio, networkx, scikit-learn, scikit-image, requests, pystac-client, planetary-computer, pyflwdir, numba, onnxruntime, matplotlib, folium, fastapi, uvicorn, httpx and pytest. Front-end dependencies (React 18, React Router, Vite) are in [`web/package.json`](./web/package.json).
+
+### Setup
+
 ```bash
 git clone https://github.com/sahinurrahman-debug/BeaconSpace.git
 cd BeaconSpace
-python -m venv .venv && . .venv/bin/activate     # Windows: .venv\Scripts\activate
+
+# 1. Python environment and dependencies
+python -m venv .venv
+source .venv/bin/activate            # Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-streamlit run app/dashboard.py                   # then: New analysis → Trishuli preset → Run analysis
+
+# 2. Build the web front end (one time)
+cd web
+npm install
+npm run build
+cd ..
+
+# 3. Check the install (about 30 s, works offline)
+pytest -q
 ```
 
-Or from the command line: `python -m floodsys run --preset trishuli`. First runs download data; repeats are cached. Run `pytest -q` for the tests. The Python package is called `floodsys`; **BeaconSpace** is the project name. Judges: start with [`docs/JUDGE_QUICKSTART.md`](./docs/JUDGE_QUICKSTART.md); finished results are in [`examples/trishuli/`](./examples/trishuli).
+The Python package is called `floodsys`; **BeaconSpace** is the project name.
 
-**Optional AI model.** `models/flood_unet.onnx` (≈ 98 MB) is not stored in the repository; see [`models/README.md`](./models/README.md). Without it the system runs its physics-based detector. To train it yourself on a free Colab GPU, follow [`docs/COLAB_GUIDE.md`](./docs/COLAB_GUIDE.md).
+### Running the project
+
+**Option A: explore the finished case study (no downloads, about 1 minute)**
+
+```bash
+# macOS / Linux
+FLOODSYS_OUT=examples uvicorn app.server:app --port 8000
+# Windows PowerShell
+$env:FLOODSYS_OUT="examples"; uvicorn app.server:app --port 8000
+```
+
+Open http://localhost:8000. The Trishuli run in [`examples/trishuli/`](./examples/trishuli) opens on the Overview page.
+
+**Option B: run an analysis yourself**
+
+```bash
+uvicorn app.server:app --port 8000
+```
+
+Open http://localhost:8000, go to **New analysis**, choose the Trishuli preset (or enter your own bounding box and flood date) and press **Run analysis**. Progress is shown step by step and the results open automatically. The first run of an area downloads data (minutes to an hour for a new area, because OpenStreetMap history is slow); repeat runs are cached. Results are written to `outputs/<run>/`.
+
+**Option C: command line only**
+
+```bash
+python -m floodsys run --preset trishuli                                   # the case study
+python -m floodsys run --bbox 85.30 28.10 85.45 28.25 --event 2026-08-25   # any area and date (west south east north)
+python -m floodsys run --preset trishuli --res 10 --pairs 3 --trace 85.3835 28.2180   # sharper, more radar tracks, flood-path bonus
+```
+
+Then start the dashboard (Option B) to browse `outputs/`, or open `outputs/<run>/sitrep.pdf` and `dashboard_map.html` directly. All command-line options are listed in [`docs/API_SPEC.md`](./docs/API_SPEC.md).
+
+**Option D: front-end development (hot reload)**
+
+```bash
+uvicorn app.server:app --port 8000      # terminal 1
+cd web && npm run dev                   # terminal 2: http://localhost:5173, proxies /api to port 8000
+```
+
+**Option E: Docker (as deployed on Render)**
+
+```bash
+docker build -t beaconspace .
+docker run -p 8000:8000 beaconspace     # http://localhost:8000, shows the bundled case study; new analyses are off by default
+```
+
+Set `BEACONSPACE_ANALYZE=on` to allow runs in the container (see the variables below). Deployment notes: [`render.yaml`](./render.yaml).
+
+**Checking the results against the official maps (optional).** Download the EMSR927 vector products from the Copernicus EMS site into `data/reference/emsr927/` and run `python scripts/evaluate_emsr927.py --run outputs/trishuli`. These maps are used for checking only, never as input.
+
+**Optional AI model.** `models/flood_unet.onnx` (about 98 MB) is not stored in the repository; see [`models/README.md`](./models/README.md). Without it the system runs its physics-based detector and the results differ by about 1 %. To train the model yourself on a free Colab GPU, follow [`docs/COLAB_GUIDE.md`](./docs/COLAB_GUIDE.md).
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| Browser shows an API message or a blank page at `/` | the front end is not built: run `npm install && npm run build` in `web/` |
+| "No analysis yet" on every page | no finished run found: use Option A, or run an analysis; check `FLOODSYS_OUT` |
+| Analysis fails with "same-track Sentinel-1 pair" | no radar images before and after that date on one orbit: try another date or a larger area |
+| A new area is very slow at the OSM step | the public Overpass server is slow; wait (tiles are cached and the run resumes) or use a smaller box |
+| No `sitrep.pdf` | install Edge or Chrome; `sitrep.html` is always produced |
+| `pip install` fails to build a package | use Python 3.12 or newer; on Linux install the GDAL/GEOS system libraries or use the Docker image |
+
+Judges: start with [`docs/JUDGE_QUICKSTART.md`](./docs/JUDGE_QUICKSTART.md).
 
 ## Environment Variables
 
@@ -171,10 +261,12 @@ No API keys or accounts are needed. All variables are optional.
 | Variable | Description | Default |
 |---|---|---|
 | `FLOODSYS_CACHE` | where downloaded rasters, terrain and OSM tiles are cached | `./cache` |
-| `FLOODSYS_OUT` | where runs are written and the dashboard looks for them | `./outputs` |
+| `FLOODSYS_OUT` | where runs are written and the app looks for them | `./outputs` |
 | `FLOODSYS_MODEL` | path to the ONNX model | `./models/flood_unet.onnx` |
-| `BEACONSPACE_START` | landing page of the dashboard (used by tests) | `overview` |
-| `PORT` | port inside the container | `8501` |
+| `BEACONSPACE_ANALYZE` | `off` disables new analyses (public demos); the Docker image sets it to `off` | `on` |
+| `BEACONSPACE_TOKEN` | if set, starting an analysis needs this token | none |
+| `BEACONSPACE_MAX_AREA_KM2` | largest area one request may cover | `6000` |
+| `PORT` | port inside the container | `8000` |
 
 ## Data Access and Rules Flow
 
@@ -196,6 +288,7 @@ There is no login. Data are read from open endpoints: Sentinel-1 from Microsoft 
 - 10–20 m pixels: single houses, small bridges and narrow roads are inferred from overlap with the footprint, not seen.
 - Debris is detected as *change*; it cannot say whether it is mud, boulders or a landslide, nor its depth.
 - Monsoon cloud limits optics (≈ 7 % clear in the final case study); radar is confused by wet snow and steep-slope geometry.
+- The cut-off count is sensitive to the blocking rule (74–153 settlements, see Results); treat 126 as a central estimate, not an exact figure.
 - Cut-off analysis uses *mapped* roads (OSM before the event): unmapped tracks, footpaths and later repairs are unknown; routes leaving the area are assumed intact.
 - The trained model saw mostly low-relief floods and no debris-flow labels.
 - Nepali text is template-based and needs review by a native speaker.

@@ -1,6 +1,6 @@
 # BeaconSpace — interface spec
 
-BeaconSpace has no web API or database. Its interfaces are a command line, a Python function, a dashboard and a set of output files.
+BeaconSpace has no database. Its interfaces are a command line, a Python function, a small JSON web API behind the React dashboard, and a set of output files.
 
 ## Command line
 `python -m floodsys run [options]`
@@ -27,6 +27,16 @@ res["out"], res["summary"]          # output folder, summary dict
 ```
 `RunConfig`: `bbox`, `event`, `name`, `res`, `n_pairs`, `use_s2`, `use_model`, `snapshot`, `trace_from`, `out_dir`, `settings`.
 Raises `RuntimeError` if no same-track pre/post Sentinel-1 pair covers the area and date.
+
+## Web API (`uvicorn app.server:app`)
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/runs` · `GET /api/presets` | finished runs (case study first) · ready-made areas |
+| `GET /api/runs/{run}` | summary, headline facts, EMS comparison, provenance, available files, attribution |
+| `GET /api/runs/{run}/map?theme=light\|dark` | interactive map, themed inside the frame |
+| `GET /api/runs/{run}/sitrep` · `/sitrep.pdf` · `/settlements.csv?status=&q=` · `/image/{evaluation_*.png}` | report and downloads |
+| `POST /api/analyze` → `GET /api/jobs/{id}` | start one analysis at a time; poll its step, log lines, result or error |
+| `GET /api/health` | health check (used by Render) |
 
 ## Dashboard pages (top navigation)
 | Page | URL path | Content | Needs a finished run |
@@ -61,4 +71,4 @@ Input `(N, 7, H, W)` float32: post VV, post VH, pre VV, pre VH (dB, scaled), smo
 Output `(N, 3, H, W)` logits: 0 no water · 1 permanent water · 2 new flood water. Built identically in `notebooks/train_flood_unet.py` and `floodsys/flood/model.py` (a unit test enforces it).
 
 ## Environment variables
-`FLOODSYS_CACHE`, `FLOODSYS_OUT`, `FLOODSYS_MODEL` (paths), `BEACONSPACE_START` (landing page, used by tests), `PORT` (container).
+`FLOODSYS_CACHE`, `FLOODSYS_OUT`, `FLOODSYS_MODEL` (paths), `BEACONSPACE_ANALYZE` (`off` = view finished runs only; default on), `BEACONSPACE_TOKEN` (if set, `POST /api/analyze` needs header `X-Token`), `BEACONSPACE_MAX_AREA_KM2` (default 6000), `PORT` (container).

@@ -4,7 +4,9 @@ services:
     name: beaconspace
     runtime: docker
     plan: free            # fine for viewing finished runs; analyses need a paid plan with several GB RAM
-    healthCheckPath: /_stcore/health
+    healthCheckPath: /api/health
     envVars:
       - key: FLOODSYS_OUT
         value: /app/examples
+      - key: BEACONSPACE_ANALYZE      # on + BEACONSPACE_TOKEN (needs a paid plan with several GB RAM) to allow new runs
+        value: "off"

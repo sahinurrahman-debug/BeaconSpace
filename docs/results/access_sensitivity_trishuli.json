@@ -1,0 +1,38 @@
+{
+  "run": "trishuli",
+  "scenarios": {
+    "base": {
+      "blocked_segments": 2945,
+      "cut_off": 126,
+      "longer_route": 164,
+      "connected": 778,
+      "buildings_in_cut_off": 7641
+    },
+    "tight": {
+      "blocked_segments": 2346,
+      "cut_off": 123,
+      "longer_route": 157,
+      "connected": 788,
+      "buildings_in_cut_off": 7607
+    },
+    "wide": {
+      "blocked_segments": 4724,
+      "cut_off": 153,
+      "longer_route": 172,
+      "connected": 743,
+      "buildings_in_cut_off": 8858
+    },
+    "both_tracks": {
+      "blocked_segments": 1174,
+      "cut_off": 74,
+      "longer_route": 48,
+      "connected": 946,
+      "buildings_in_cut_off": 4608
+    }
+  },
+  "cut_off_range": [
+    74,
+    153
+  ],
+  "note": "Counts of settlements whose road connection to a hospital/town is lost, under four rules for when a road segment is blocked."
+}

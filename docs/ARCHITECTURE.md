@@ -2,7 +2,7 @@
 
 ## Overview
 A Python pipeline (`floodsys/`) turns *(bounding box, flood time)* into maps, damage statistics, cut-off settlements and a report.
-A Streamlit app (`app/dashboard.py`) is a thin UI over the same pipeline. There is no database and no login: results are plain files
+A FastAPI server (`app/server.py`) exposes the same pipeline and the run files as a JSON API, and serves the React front end (`web/`, Vite build). There is no database and no login: results are plain files
 in `outputs/<run>/`, and remote data are open endpoints.
 
 ```
@@ -43,9 +43,11 @@ in `outputs/<run>/`, and remote data are open endpoints.
 - Typical case-study run (3 300 km², everything cached): 3–10 minutes on a laptop CPU.
 
 ## Interfaces
-CLI (`python -m floodsys run …`), dashboard (`streamlit run app/dashboard.py`), Python API (`floodsys.pipeline.run`). See [API_SPEC.md](API_SPEC.md).
+CLI (`python -m floodsys run …`), dashboard (`uvicorn app.server:app`, front end built from `web/`), Python API (`floodsys.pipeline.run`). See [API_SPEC.md](API_SPEC.md).
 
 ## Quality
-- `pytest -q`: synthetic unit tests (pair planning, detector incl. shadow and river-proximity, overlay, cut-off graph, feature contract between notebook and runtime, report numbers) and dashboard tests (Streamlit AppTest).
+- `pytest -q`: synthetic unit tests (pair planning, detector incl. shadow and river-proximity, overlay, cut-off graph, feature contract between notebook and runtime, report numbers) and API tests (FastAPI TestClient: run payloads, map theming, downloads, analysis job and error hand-off).
 - `scripts/null_test.py` (false alarms) and `scripts/evaluate_emsr927.py` (checking only) for evaluation.
+- `floodsys/sources.py` is the data-rule guard: every raster/OSM read is checked against the allowed hosts and reference-map paths are refused.
+- `scripts/sensitivity_access.py` and the block-bootstrap CI in `scripts/evaluate_emsr927.py` quantify how far the cut-off counts and the EMS agreement move with our own choices.
 - Untrusted text (OSM names) is HTML-escaped before it reaches popups or tables.

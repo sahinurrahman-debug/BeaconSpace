@@ -8,3 +8,5 @@ __pycache__/
 data/reference/
 _synth_work/
 *.pyc
+web/node_modules/
+web/dist/

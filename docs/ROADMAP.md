@@ -22,6 +22,12 @@
 7. **Hosted demo** with cached example runs (container image is ready).
 
 ## Known issues
+- The 93 MiB model blob (`models/flood_unet.onnx`) is still in git history (commit `480573d`); purge with `git filter-repo` and force-push.
+- Data rules are enforced at read time by `floodsys/sources.py` (allowed hosts only; reference-map paths refused) and the OSM snapshot must predate the event; cache hits are not re-checked, so `sources_accessed_this_run` lists only what a run actually fetched.
+- The Docker image, Render service and CI workflow are written but have not been built or run (no Docker here); the same server was run locally in "Render mode" (`FLOODSYS_OUT=examples BEACONSPACE_ANALYZE=off`). Python dependencies are pinned to the tested versions (Python 3.14).
+- Cut-off count depends on our blocking rule: 126 in the base run, 74–153 across four rules (`scripts/sensitivity_access.py`, `docs/results/access_sensitivity_trishuli.json`); 25 % of settlements are not assessable (no OSM road data).
+- Back end runs one analysis at a time in memory (jobs are lost on restart, no cancel); `cache/` has no eviction.
+- Front end has no automated browser tests.
 - A first run on a new area is slow when only the public Overpass server is available.
 - Hill-slope landslides far from rivers are intentionally out of scope.
 - Farmland next to rivers can still produce false alarms.

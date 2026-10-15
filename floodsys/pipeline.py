@@ -13,7 +13,7 @@ import geopandas as gpd
 import numpy as np
 import rasterio
 
-from . import config
+from . import config, sources
 from .analysis import access, damage, flowpath, waterrise
 from .data import dem as demmod
 from .data import osm as osmmod
@@ -68,6 +68,7 @@ def _gdf_out(gdf: gpd.GeoDataFrame, path: Path, simplify: float = 0.0):
 def run(cfg: RunConfig, log=print) -> dict:
     t_start = time.time()
     S = cfg.settings
+    sources.reset()
     out = (cfg.out_dir or config.OUTPUT_DIR) / cfg.slug()
     out.mkdir(parents=True, exist_ok=True)
     event = cfg.event if cfg.event.tzinfo else cfg.event.replace(tzinfo=UTC)
@@ -78,7 +79,8 @@ def run(cfg: RunConfig, log=print) -> dict:
             "resolution_m": cfg.res, "area_km2": round(area_km2, 1), "python": platform.python_version(),
             "inputs_allowed": ["Sentinel-1 RTC (Copernicus Sentinel data)", "Sentinel-2 L2A", "Copernicus DEM GLO-30",
                                "OpenStreetMap snapshot predating the event", "Kuro Siwo (model training only)"],
-            "forbidden_inputs_used": [], "parameters": {k: vars(v) for k, v in vars(S).items()}}
+            "forbidden_inputs_used": [],          # kept empty by construction: sources.check() raises before a forbidden source is read
+            "parameters": {k: vars(v) for k, v in vars(S).items()}}
 
     # ---- terrain -----------------------------------------------------------
     terrain = demmod.terrain_layers(grid, log=log)
@@ -226,6 +228,8 @@ def run(cfg: RunConfig, log=print) -> dict:
     }
     (out / "summary.json").write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
     prov["summary_file"] = "summary.json"
+    prov["sources_accessed_this_run"] = sources.used()       # hosts actually read this run (cache hits read nothing new)
+    prov["source_guard"] = "floodsys/sources.py refuses any host outside the allowed list and any reference-map path before reading"
     (out / "provenance.json").write_text(json.dumps(prov, indent=2, default=str), encoding="utf-8")
 
     from .report import mapplot, sitrep

@@ -8,3 +8,5 @@ _synth_work/
 models/*.pt
 .ipynb_checkpoints/
 models/*.onnx
+web/node_modules/
+web/dist/

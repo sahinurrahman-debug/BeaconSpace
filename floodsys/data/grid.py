@@ -14,6 +14,8 @@ from rasterio.enums import Resampling
 from rasterio.vrt import WarpedVRT
 from rasterio.windows import Window
 
+from .. import sources
+
 
 @dataclass(frozen=True)
 class Grid:
@@ -121,6 +123,7 @@ def read_to_grid(href: str, grid: Grid, resampling=Resampling.average, nodata=No
 
     Values equal to the source nodata become NaN. Returns float32 (H, W).
     """
+    sources.check(href)
     chunks = [(r, min(r + chunk_rows, grid.height)) for r in range(0, grid.height, chunk_rows)]
 
     def job(rows):

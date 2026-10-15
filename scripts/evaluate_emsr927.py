@@ -87,6 +87,27 @@ if len(obs) and ours is not None and len(ours):
                      "IoU": round(inter / max((o_u.union(r_u)).area / 1e4, 1e-9), 3),
                      "precision": round(inter / max(o_u.area / 1e4, 1e-9), 3),
                      "recall": round(inter / max(r_u.area / 1e4, 1e-9), 3)}
+    # uncertainty: spatial block bootstrap (1 km blocks, resampled with replacement) of the three areas behind IoU / precision / recall
+    from shapely.geometry import box as _box
+    x0, y0, x1, y1 = clip.bounds
+    rows = []
+    for gx in np.arange(x0, x1, 1000.0):
+        for gy in np.arange(y0, y1, 1000.0):
+            cell = _box(gx, gy, gx + 1000.0, gy + 1000.0).intersection(clip)
+            if cell.area < 1.0:
+                continue
+            oc_, rc_ = o_u.intersection(cell), r_u.intersection(cell)
+            rows.append((oc_.intersection(rc_).area, oc_.area, rc_.area))
+    if len(rows) >= 8:
+        arr = np.array(rows) / 1e4
+        rng = np.random.default_rng(0)
+        vals = []
+        for _ in range(1000):
+            t = arr[rng.integers(0, len(arr), len(arr))].sum(axis=0)
+            vals.append((t[0] / max(t[1] + t[2] - t[0], 1e-9), t[0] / max(t[1], 1e-9), t[0] / max(t[2], 1e-9)))
+        lo, hi = np.percentile(vals, [2.5, 97.5], axis=0)
+        res["extent_95ci_block_bootstrap"] = {"blocks_1km": len(arr), "IoU": [round(lo[0], 3), round(hi[0], 3)],
+                                              "precision": [round(lo[1], 3), round(hi[1], 3)], "recall": [round(lo[2], 3), round(hi[2], 3)]}
     # tolerance version: a 10 m pixel-level dislocation should not count as an error
     tol = 30.0
     rec_t = r_u.intersection(o_u.buffer(tol)).area / max(r_u.area, 1e-9)

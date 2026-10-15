@@ -6,7 +6,7 @@
 git clone https://github.com/sahinurrahman-debug/BeaconSpace.git && cd BeaconSpace
 python -m venv .venv && . .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-pytest -q                                          # 8 offline tests (+4 dashboard tests that need a finished run), ~30 s
+pytest -q                                          # 20 offline tests (11 of them need a finished run in outputs/trishuli), ~30 s
 ```
 
 ## 1 · See finished results immediately (no download)
@@ -15,7 +15,7 @@ Open `examples/trishuli/`: `sitrep.pdf` (one page English + one page Nepali), `m
 ## 2 · Reproduce the case study (≈ 10 min; OpenStreetMap tiles are bundled)
 ```bash
 python -m floodsys run --preset trishuli          # Sentinel-1/2 + DEM are streamed live; OSM comes from data/osm_tiles/
-streamlit run app/dashboard.py                    # then the **Overview** page opens the finished Trishuli run
+uvicorn app.server:app --port 8000                    # then the **Overview** page opens the finished Trishuli run
 ```
 
 ## 3 · Your own area and date (the live evaluation)
@@ -41,5 +41,5 @@ on the public server — a first run of a new area can take longer; repeats are 
 | Honesty about limits | report §7, README §5 |
 
 ## 5 · Files in this repo
-`floodsys/` (pipeline) · `app/dashboard.py` · `notebooks/train_flood_unet.ipynb` (Colab training) · `scripts/` (evaluation, report build, OSM tools) ·
+`floodsys/` (pipeline) · `app/server.py` + `web/` (React) · `notebooks/train_flood_unet.ipynb` (Colab training) · `scripts/` (evaluation, report build, OSM tools) ·
 `docs/Report.pdf` · `docs/results/` (raw evaluation numbers) · `ATTRIBUTION.md`.
