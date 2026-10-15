@@ -5,9 +5,9 @@
 > Satellite flood-damage mapping for rescue teams: give it an area and a flood date, and it shows where the flood hit, what was damaged, and which villages are cut off.
 
 [![Repo](https://img.shields.io/badge/GitHub-Repo-black?style=for-the-badge&logo=github)](https://github.com/sahinurrahman-debug/BeaconSpace)
-[![Report](https://img.shields.io/badge/Technical-Report-blue?style=for-the-badge)](./docs/Report.pdf)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-blue?style=for-the-badge)](https://beaconspace.onrender.com)
 
-*Multimodal AI Hackathon 2026 · Track B: Mapping Flood Damage from Space · contains no images of victims.*
+*Multimodal AI Hackathon 2026 · Track B: Mapping Flood Damage from Space*
 
 ---
 
